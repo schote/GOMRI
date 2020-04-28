@@ -49,6 +49,8 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.data.readout_finished.connect(self.acq_handler)
         self.data.uploaded.connect(self.sequence_uploaded)
 
+        data.set_FID
+
         self.fig = Figure()
         self.fig.set_facecolor("None")
         self.fig_canvas = FigureCanvas(self.fig)
@@ -286,17 +288,18 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         params.grad[3] = self.z2Offset_input.value()
 
         self.data.set_gradients(params.grad[0], params.grad[1], params.grad[2], params.grad[3])
-        self.data.acquire()
+        self.data.acquire
 
     def start_manual(self):
         if self.manualAvg_enable.isChecked(): self.init_averaging()
-        else: self.data.acquire();
+        else: self.data.acquire
+        ;
 
     def manual_center(self): # Function to apply the center frequency manually
         if self.data.center_freq != 'nan':
             self.manualFreq_input.setValue(round(self.data.center_freq,5))
             self.data.set_freq(self.data.center_freq)
-            self.data.acquire()
+            self.data.acquire
 
     def acq_handler(self): # Function to handle current acquisition mode -- called whenever signal received
         print("Handling acquisition event.")
@@ -360,7 +363,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
             print("\nAcquisition counter: ", self.acqCount+1,"/",len(self.freqSpace),":")
             self.acqCount += 1
             self.data.set_freq(round(params.freq, 5))
-            self.data.acquire()
+            self.data.acquire
         else:
             print("autocenter finished.")
             if self.autocenter_flag == True:
@@ -370,7 +373,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
                 self.autocenter_flag = False
                 print("set peak frequency: ", self.centerValue)
                 self.data.set_freq(self.centerValue)
-                self.data.acquire()
+                self.data.acquire
             self.enable_controls()
 
     def flipangle_run(self): # Function for performing multiple AT acquisitions
@@ -379,7 +382,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
             print("\nAcquisition counter: ", self.acqCount+1,"/",len(self.at_values),":")
             self.acqCount += 1
             self.data.set_at(params.at)
-            self.data.acquire()
+            self.data.acquire
         else:
             self.flipangle_flag = False
             self.enable_controls()

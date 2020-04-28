@@ -24,434 +24,77 @@
 import sys
 import struct
 import time
-
 from datetime import datetime
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
+
+from server.communicationhandler import com
+from server.acquisitionhandler import acq
+
 
 import numpy as np
-import pandas as pd
 from scipy.optimize import curve_fit, brentq
 # just for debugging calculations:
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-from TCPsocket import socket, connected, unconnected
 from parameters import params
-from assembler import Assembler
 
-class data(QObject):
+class DataHandler:
 
-    # Init signal thats emitted when readout is processed
-    readout_finished = pyqtSignal()
+    # Init signal that's emitted when readout is processed
     t1_finished = pyqtSignal()
     t2_finished = pyqtSignal()
     uploaded = pyqtSignal(bool)
 
-    def __init__(self):
-        super(data, self).__init__()
-        self.initVariables()
-
-        # Read sequence files
-        self.seq_fid = 'sequence/FID.txt'
-        self.seq_se = 'sequence/SE_te.txt'
-        self.seq_ir = 'sequence/IR_ti.txt'
-        self.seq_sir = 'sequence/SIR_ti.txt'
-        self.seq_2dSE = 'sequence/img/2DSE.txt'
-        #self.seq_2dSE = 'sequence/img/se.txt'
-
-        # Define Gradients
-        self.GR_x = 0
-        self.GR_y = 1
-        self.GR_z = 2
-        self.GR_z2 = 3
-#_______________________________________________________________________________
-#   Establish host connection and disconnection
-
-
-    def conn_client(self, ip):
-
-        socket.connectToHost(ip, 1001)
-        socket.waitForConnected(1000)
-
-        if socket.state() == connected :
-            print("Connection to server esteblished.")
-            return True
-        elif socket.state() == unconnected:
-            print("Conncection to server failed.")
-            return False
-        else:
-            print("TCP socket in state : ", socket.state())
-            return socket.state()
-
-        #self.set_at(params.at)
-        #self.set_freq(params.freq)
-
-    def disconn_client(self):
-        try:
-            socket.disconnectFromHost()
-        except: pass
-        if socket.state() == unconnected :
-            print("Disconnected from server.")
-        else: print("Connection to server still established.")
-
-
-#_______________________________________________________________________________
-#   Functions for initialization of variables
-
-    def initVariables(self):
-        # Flags
-        self.ir_flag = False
-        self.se_flag = False
-        self.fid_flag = False
-
-        # Variables
-        self.size = 50000  # total data received (defined by the server code)
-        self.buffer = bytearray(8*self.size)
-        self.data = np.frombuffer(self.buffer, np.complex64)
-
-        # Variables
-        #self.time = 20
-        self.freq_range = 250000
-
-#_______________________________________________________________________________
-#   Functions for Sequence Setup
-
-    # Function to set default FID sequence
-    def set_FID(self): # Function to init and set FID -- only acquire call is necessary afterwards
-
-        self.assembler = Assembler()
-        byte_array = self.assembler.assemble(self.seq_fid)
-
-        # Implement new concept:
-        # com.set_sequence(byte_array)
-
-        socket.write(struct.pack('<I', 4 << 28))
-        socket.write(byte_array)
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten():
-                break
-
-        socket.setReadBufferSize(8*self.size)
-        self.ir_flag = False
-        self.se_flag = False
-        self.fid_flag = True
-        print("\nFID sequence uploaded.")
-
-    # Function to set default FID sequence
-    def set_2dSE(self): # Function to init and set FID -- only acquire call is necessary afterwards
-
-        self.assembler = Assembler()
-        byte_array = self.assembler.assemble(self.seq_2dSE)
-
-        # Implement new concept:
-        # com.set_sequence(byte_array)
-
-        socket.write(struct.pack('<I', 4 << 28))
-        socket.write(byte_array)
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten():
-                break
-
-        print(byte_array)
-
-        socket.setReadBufferSize(8*self.size)
-        print("\n2D SE sequence uploaded.")
-
-    # Function to set default SE sequence
-    def set_SE(self, TE=10): # Function to modify SE -- call whenever acquiring a SE
-
-        # Change TE in sequence and push to server
-        params.te = TE
-        self.change_TE(params.te)#, REC)
-
-        self.assembler = Assembler()
-        byte_array = self.assembler.assemble(self.seq_se)
-
-        # Implement new concept:
-        # com.set_sequence(byte_array)
-
-        socket.write(struct.pack('<I', 4 << 28))
-        socket.write(byte_array)
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        socket.setReadBufferSize(8*self.size)
-        self.ir_flag = False
-        self.se_flag = True
-        self.fid_flag = False
-        print("\nSE sequence uploaded with TE = ", TE, " ms.")
-
-    # Function to change TE in sequence
-    def change_TE(self, TE): # Function for changing TE value in sequence -- called inside set_SE
-        # Open sequence and read lines
-        f = open(self.seq_se, 'r+')
-        lines = f.readlines()
-        if TE < 2: TE = 2
-        # Modify TE time in the 8th last line
-        lines[-10] = 'PR 3, ' + str(int(TE/2 * 1000 - 112)) + '\t// wait&r\n'
-        lines[-6] = 'PR 3, ' + str(int(TE/2 * 1000 - 975)) + '\t// wait&r\n'
-        # Close and write/save modified sequence
-        f.close()
-        with open(self.seq_se, "w") as out_file:
-            for line in lines:
-                out_file.write(line)
-
-    # Function to set default IR sequence
-    def set_IR(self, TI=15):#, REC=1000): # Function to modify SE -- call whenever acquiring a SE
-
-        params.ti = TI
-        self.change_IR(params.ti, self.seq_ir)#, REC)
-
-        self.assembler = Assembler()
-        byte_array = self.assembler.assemble(self.seq_ir)
-
-        # Implement new concept:
-        # com.set_sequence(byte_array)
-
-        socket.write(struct.pack('<I', 4 << 28))
-        socket.write(byte_array)
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        socket.setReadBufferSize(8*self.size)
-        self.ir_flag = True
-        self.se_flag = False
-        self.fid_flag = False
-        print("\nIR sequence uploaded with TI = ", TI, " ms.")#" and REC = ", REC, " ms.")
-
-    # Function to change TI in IR sequence
-    def change_IR(self, TI, seq):
-        f = open(seq, 'r+') # Open sequence and read lines
-        lines = f.readlines()
-        # Modify TI time in the 8th last line
-        lines[-14] = 'PR 3, ' + str(int(TI * 1000 - 198)) + '\t// wait&r\n'
-        f.close() # Close and write/save modified sequence
-        with open(seq, "w") as out_file:
-            for line in lines:
-                out_file.write(line)
-
-    # Function to set default SIR sequence
-    def set_SIR(self, TI=15):
-
-        params.ti = TI
-        #self.change_SIR(params.ti, self.seq_sir)
-        self.assembler = Assembler()
-        byte_array = self.assembler.assemble(self.seq_sir)
-
-        # Implement new concept:
-        # com.upload_sequence(byte_array)
-
-        socket.write(struct.pack('<I', 4 << 28))
-        socket.write(byte_array)
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        socket.setReadBufferSize(8*self.size)
-        print("\nSIR sequence uploaded with TI = ", TI, " ms.")#" and REC = ", REC, " ms.")
-
-    # Function to change TI in SIR sequence
-    def change_SIR(self, TI, seq):
-        f = open(seq, 'r+') # Open sequence and read lines
-        lines = f.readlines()
-        # Modify TI time in the 8th last line
-        #ines[-14] = 'PR 3, ' + str(int(TI * 1000 - 198)) + '\t// wait&r\n'
-        #lines[-18] = 'PR 3, ' + str(int(TI * 1000 - 198)) + '\t// wait&r\n'
-        lines[-9] = 'PR 3, ' + str(int(TI * 1000 - 198)) + '\t// wait&r\n'
-        lines[-13] = 'PR 3, ' + str(int(TI * 1000 - 198)) + '\t// wait&r\n'
-        f.close() # Close and write/save modified sequence
-        with open(seq, "w") as out_file:
-            for line in lines:
-                out_file.write(line)
-
-    # Set uploaded sequence
-    def set_uploaded_seq(self, seq):
-        print("Set uploaded Sequence.")
-        self.assembler = Assembler()
-        byte_array = self.assembler.assemble(seq)
-
-        # Implement new concept:
-        # com.upload_sequence(byte_array)
-
-        socket.write(struct.pack('<I', 4 << 28))
-        socket.write(byte_array)
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        # Multiple function calls
-        socket.setReadBufferSize(8*self.size)
-        #print(byte_array)
-        print("Sequence uploaded to server.")
-        self.uploaded.emit(True)
-
-#_______________________________________________________________________________
-#   Functions to Control Console
-
-    # Function to set frequency
-    def set_freq(self, freq):
-        params.freq = freq
-        socket.write(struct.pack('<I', 2 << 28| int(1.0e6 * freq)))
-        print("Set frequency!")
-
-    # Function to set attenuation
-    def set_at(self, at):
-        params.at = at
-        socket.write(struct.pack('<I', 3 << 28 | int(abs(at)/0.25)))
-        print("Set attenuation!")
-
-    # Function to trigger acquisition and perform single readout
-    def acquire(self, ts = 20):
-        t0 = time.time() # calculate time for acquisition
-        socket.write(struct.pack('<I', 1 << 28))
-
-        # Implement new concept:
-        # com.start_acquisition()
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        while True: # Read data
-            socket.waitForReadyRead()
-            datasize = socket.bytesAvailable()
-            # print(datasize)
-            time.sleep(0.0001)
-            if datasize == 8*self.size:
-                print("Readout finished : ", datasize)
-                self.buffer[0:8*self.size] = socket.read(8*self.size)
-                t1 = time.time() # calculate time for acquisition
-                break
-            else: continue
-
-        print("Start processing readout.")
-        self.process_readout(ts)
-        print("Start analyzing data.")
-        self.analytics()
-        print('Finished acquisition in {:.3f} ms'.format((t1-t0)*1000.0))
-        # Emit signal, when data was read
-        self.readout_finished.emit()
-
-    # Function to acquire an image with multiple readouts
-    def acquireImage(self, npe = 16, TR = 4000, ts = 4):
-
-        # Implement new concept:
-        # com.start_image(npe)
-
-        socket.write(struct.pack('<I', 6 << 28 | npe << 16 | TR))
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        t0 = time.time()
-
-        for n in range(npe):
-            while True: # Read data
-                socket.waitForReadyRead()
-                datasize = socket.bytesAvailable()
-                time.sleep(0.0001)
-                if datasize == 8*self.size:
-                    print("Readout finished : ", datasize)
-                    self.buffer[0:8*self.size] = socket.read(8*self.size)
-                    break
-                else: continue
-
-            self.process_readout(ts)
-            self.readout_finished.emit()
-
-        t1 = time.time()
-        print('Finished image acquisition in {:.4f} min'.format((t1-t0)/60))
-
-    # Function to acquire 1D projection
-    def acquireProjection(self, ax, ts=20):
-
-        # Implement new concept:
-        # com.start_projection(ax)
-
-        print("Acquire projection along axis: ", ax, "\n")
-        socket.write(struct.pack('<I', 7 << 28 | ax))
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten(): break
-
-        while True: # Read data
-            socket.waitForReadyRead()
-            datasize = socket.bytesAvailable()
-            # print(datasize)
-            time.sleep(0.0001)
-            if datasize == 8*self.size:
-                print("Readout finished : ", datasize)
-                self.buffer[0:8*self.size] = socket.read(8*self.size)
-                t1 = time.time() # calculate time for acquisition
-                break
-            else: continue
-
-        print("Start processing readout.")
-        self.process_readout(ts)
-
-        self.readout_finished.emit()
-
-    # Function to set gradient offsets
-    def set_gradients(self, gx=None, gy=None, gz=None, gz2=None):
-
-        if not gx == None:
-            if np.sign(gx) < 0: sign = 1
-            else: sign = 0
-            socket.write(struct.pack('<I', 5 << 28 | self.GR_x << 24 | sign << 20 | abs(gx)))
-        if not gy == None:
-            if np.sign(gy) < 0: sign = 1
-            else: sign = 0
-            socket.write(struct.pack('<I', 5 << 28 | self.GR_y << 24 | sign << 20 | abs(gy)))
-        if not gz == None:
-            if np.sign(gz) < 0: sign = 1
-            else: sign = 0
-            socket.write(struct.pack('<I', 5 << 28 | self.GR_z << 24 | sign << 20 | abs(gz)))
-        if not gz2 == None:
-            if np.sign(gz2) < 0: sign = 1
-            else: sign = 0
-            #socket.write(struct.pack('<I', 5 << 28 | self.GR_z2 << 24 | sign << 20 | abs(gz2)))
-
-        while(True): # Wait until bytes written
-            if not socket.waitForBytesWritten():
-                break
-
-        #self.acquire()
-#_______________________________________________________________________________
-#   Process and analyse acquired data
+    data: np.complex_64                 # data, from acquisition handler
+
+    t_sample: int                       # sample time
+    t_magnitude: np.ndarray             # magnitude, time domain
+    t_real: np.ndarray                  # real part, time domain
+    t_imag: np.ndarray                  # imaginary part, time domain
+    t_axis: np.ndarray                  # axis, time domain
+    t_magnitudeCon: np.ndarray          # convolution: magnitude, time domain
+    t_realCon: np.ndarray               # convolution: real part, time domain
+
+    f_axis: np.ndarray                  # axis, frequency domain
+    f_range: int                        # range, frequency domain
+    f_fftData: np.ndarray               # fft, complex data in frequency domain
+    f_fftMagnitude: np.ndarray          # fft, magnitude, frequency domain
+
+    def __init__(self, data: np.complex, t_sample: int = 20, f_range: int = 250000):
+        self.data = data
+        self.f_range = f_range
+        self.t_sample = t_sample
+        self.t_dataIdx = int(t_sample*250)
 
     # Function to process the readout: extract spectrum, real, imag and magnitude data
-    def process_readout(self, ts=20): # Read buffer part of interest and perform FFT
+    def processReadoutData(self):
 
-        # Max. data index and crop data
-        self.data_idx = int(ts * 250)
-        self.dclip = self.data[0:self.data_idx]*2000.0 # +-1V -> ultiply by 2000 to obtain mV
         timestamp = datetime.now()
 
-        self.mag = np.abs(self.data)
-        self.pha = np.angle(self.data)
+        # +-1V -> multiply by 2000 to obtain mV
+        d_cropped: np.complex_64 = self.data[0:self.t_dataIdx] * 2000.0
 
         # Time domain data
-        self.mag_t = np.abs(self.dclip)
-        self.imag_t = np.imag(self.dclip)
-        self.real_t = np.real(self.dclip)
-        self.mag_con = np.convolve(self.mag_t, np.ones((50,))/50, mode='same')
-        self.real_con = np.convolve(self.real_t, np.ones((50,))/50, mode='same')
-        self.time_axis = np.linspace(0, ts, self.data_idx)
+        self.t_magnitude = np.abs(d_cropped)
+        self.t_imag = np.imag(d_cropped)
+        self.t_real = np.real(d_cropped)
+
+        self.t_magnitudeCon = np.convolve(self.t_magnitude, np.ones((50,))/50, mode='same')
+        self.t_realCon = np.convolve(self.t_real, np.ones((50,))/50, mode='same')
+        self.t_axis = np.linspace(0, self.t_sample, self.t_dataIdx)
 
         # Frequency domain data
-        self.freqaxis = np.linspace(-self.freq_range/2, self.freq_range/2, self.data_idx)   # 5000 points ~ 20ms
-        self.fft = np.fft.fftshift(np.fft.fft(np.fft.fftshift(self.dclip), n=self.data_idx, norm='ortho'))   # Normalization through 1/sqrt(n)
-        self.fft_mag = abs(self.fft)
+        self.f_axis = np.linspace(-self.f_range/2, self.f_range/2, self.t_dataIdx)   # 5000 points ~ 20ms
+        self.f_fftData = np.fft.fftshift(np.fft.fft(np.fft.fftshift(d_cropped), n=self.t_dataIdx, norm='ortho'))   # Normalization through 1/sqrt(n)
+        self.f_fftMagnitude = abs(self.f_fftData)
 
         params.dataTimestamp = timestamp.strftime('%m/%d/%Y, %H:%M:%S')
-        params.data = self.dclip
-        params.freqaxis = self.freqaxis
-        params.fft = self.fft_mag
+        params.data = d_cropped
+        params.freqaxis = self.f_axis
+        params.fft = self.f_fftMagnitude
 
-        # Ampltiude and phase plot
+        # Amplitude and phase plot
         #fig, ax = plt.subplots(2,1)
         #ax[0].plot(self.time_axis, self.real_t)
         #ax[0].plot(self.time_axis, np.convolve(self.real_t, np.ones((50,))/50, mode='same'))
@@ -461,43 +104,36 @@ class data(QObject):
 
         print("\tReadout processed.")
 
-    # Function to calculate parameter like snr and peak values
-    def analytics(self): # calculate output parameters
+    def get_fwhm(self, f_fwhmWindow: int = 1000) -> [int, float, float]:
+        [f_peakValue, f_peakIdx, f_peakFreq] = self.get_peakparameters()
+        candidates: np.ndarray = np.abs([x - f_peakValue / 2 for x in self.f_fftMagnitude[f_peakIdx - f_fwhmWindow/2:f_peakIdx + f_fwhmWindow/2]])
+        # Calculate index difference by find indices of minima, calculate fwhm in Hz thereafter
+        f_fwhm: int = np.argmin(candidates[f_fwhmWindow:]) + f_fwhmWindow - np.argmin(candidates[:f_fwhmWindow])
+        f_fwhm_hz: float = f_fwhm * (abs(np.min(self.f_axis)) + abs(np.max(self.f_axis))) / self.t_dataIdx
+        f_fwhm_ppm: float = f_fwhm_hz/f_peakFreq
 
-        # Determine peak/maximum value:
-        self.peak_value = round(np.max(self.fft_mag), 2)
-        self.max_index = np.argmax(self.fft_mag)
+        return [f_fwhm, f_fwhm_hz, f_fwhm_ppm]
 
-        # Declarations
-        win = int(self.data_idx/20)
-        N = 50
-        p_idx = self.max_index
+    def get_snr(self, f_windowfactor: float = 1.2, n: int = 50) -> float:
+        [f_fwhm, _] = self.get_fwhm()
+        [f_signalValue, f_signalIdx, _] = self.get_peakparameters()
+        f_peakWin: int = int(f_fwhm * f_windowfactor)
+        f_fftMovingAverage: np.ndarray = np.convolve(self.f_fftMagnitude, np.ones((n,)) / n, mode='same')
+        noise: np.ndarray = np.subtract(self.f_fftMagnitude, f_fftMovingAverage)
+        snr = round(f_signalValue / np.std([noise[:f_signalIdx - f_peakWin/2], noise[f_signalIdx + f_peakWin/2:]]), 2)
 
-        # Full with half maximum (fwhm):
-        # Determine candidates inside peak window by substruction of half peakValue
-        candidates = np.abs([x-self.peak_value/2 for x in self.fft_mag[p_idx-win:p_idx+win]])
-        # Calculate index difference by findind indices of minima, calculate fwhm in Hz thereafter
-        fwhm_idx = np.argmin(candidates[win:])+win-np.argmin(candidates[:win])
-        self.fwhm_value = fwhm_idx*(abs(np.min(self.freqaxis))+abs(np.max(self.freqaxis)))/self.data_idx
-        # Verification of fwhm calculation
-        #plt.plot(candidates)
-        #plt.show()
+        return snr      # TODO: Add return in dB
 
-        # Signal to noise ratio (SNR):
-        # Determine noise by substruction of moving avg from signal
-        movAvg = np.convolve(self.fft_mag, np.ones((N,))/N, mode='same')
-        noise = np.subtract(self.fft_mag, movAvg)
-        # Calculate sdt. dev. outside a window, that depends on fwhm
-        self.snr = round(self.peak_value/np.std([*noise[:p_idx-win], *noise[p_idx+win:]]),2)
-        # Verification of snr calculation
-        #plt.plot(self.freqaxis, self.fft_mag); plt.plot(self.freqaxis, movAvg);
-        #plt.plot([*noise[:p_idx-win], *noise[p_idx+win:]])
-        #plt.show()
+    def get_peakparameters(self, freq: float = params.freq) -> [float, int, float]:
 
-        # Center frequency calculation:
-        self.center_freq = round(params.freq + ((self.max_index - self.data_idx/2) * self.freq_range / self.data_idx ) / 1.0e6, 6)
+        f_signalValue: float = round(np.max(self.f_fftMagnitude), 2)
+        f_signalIdx: int = np.argmax(self.f_fftMagnitude)[0]
+        f_signalFrequency: float = round(freq + ((f_signalIdx - self.t_dataIdx / 2)
+                                                 * self.f_range / self.t_dataIdx) / 1.0e6, 6)
 
-        print("\tData analysed.")
+        return [f_signalValue, f_signalIdx, f_signalFrequency]
+
+    # TODO: Connect acquisitionhandler signal with instantiation of datahandler class
 
 #_______________________________________________________________________________
 #   T1 Measurement
@@ -591,7 +227,6 @@ class data(QObject):
 
         print("T1 FIT\n bnds:\t{}".format(bnds))
 
-
     # Calculates fit for multiple IR's to determine t0
     def T1_fit(self, x, A, B, C):
         return A - B * np.exp(-C * x)
@@ -675,3 +310,6 @@ class data(QObject):
     # Calculates fit for multiple SE's to determine drop of Mxy
     def T2_fit(self, x, A, B, C):
         return A + B * np.exp(-C * x)
+
+
+

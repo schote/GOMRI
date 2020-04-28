@@ -336,14 +336,14 @@ class ProtocolWidget(Protocol_Base, Protocol_Form):
         for freq in self.freqCalib:
             self.clear_fig()
             self.data.set_freq(freq)
-            self.data.acquire()
+            self.data.acquire
             peaks.append(self.data.peak_value)
             freqs.append(self.data.center_freq)
         params.freq = freqs[np.argmax(peaks)]
         self.clear_fig()
         self.data.readout_finished.connect(self.plot_data)
         self.data.set_freq(params.freq)
-        self.data.acquire()
+        self.data.acquire
 
     # Continue protocol after pause, temperature set or sample change
     def continue_protocol_exec(self):

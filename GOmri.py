@@ -29,6 +29,8 @@ from parameters import params
 from dataHandler import data
 from dataLogger import logger
 
+from server import communicationhandler as com
+
 plt.rc('axes', prop_cycle=params.cycler)
 plt.rcParams['lines.linewidth'] = 1
 plt.rcParams['axes.grid'] = True
@@ -282,7 +284,7 @@ class ConnectionDialog(Conn_Dialog_Base, Conn_Dialog_Form):
         print(params.ip)
         params.saveFile()
 
-        connection = self.data.conn_client(params.ip)
+        connection = com.connectClient(params.ip) #self.data.conn_client(params.ip)
 
         if connection:
             self.status_label.setText('Connected.')

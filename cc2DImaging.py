@@ -238,13 +238,13 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         if self.data.center_freq != 'nan':
             self.freq_input.setValue(round(self.data.center_freq,5))
             self.data.set_freq(self.data.center_freq)
-            self.data.acquire()
+            self.data.acquire
 
     def startSpectrum(self):
         self.data.set_SE()
         self.data.change_TE(10)
         self.init_spectrum()
-        self.data.acquire()
+        self.data.acquire
 
     def startImaging(self):
 

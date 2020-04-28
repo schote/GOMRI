@@ -6,3 +6,5 @@ socket = QTcpSocket()
 
 connected = QAbstractSocket.ConnectedState
 unconnected = QAbstractSocket.UnconnectedState
+
+
