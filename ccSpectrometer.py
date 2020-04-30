@@ -4,7 +4,7 @@
 #   Date:       11/27/2019
 #
 #   Spectrometer Sub Application
-#   Control center for the acquisition sequence, to obtain the probes spectrum
+#   Control center for the manager sequence, to obtain the probes spectrum
 #   loads and stores parameters, executable with FID, SE, IR, SIR or
 #   manual sequence
 #   Tools:
@@ -20,19 +20,17 @@ import csv
 
 # import PyQt5 packages
 from PyQt5.QtWidgets import QFileDialog
-from PyQt5.uic import loadUiType, loadUi
+from PyQt5.uic import loadUiType
 from PyQt5.QtCore import pyqtSignal, QStandardPaths
 
 # import calculation and plot packages
 import numpy as np
-import scipy.io as sp
 from scipy.optimize import curve_fit
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from parameters import params
-from dataHandler import data
+from manager.datamanager import data
 from dataLogger import logger
 
 CC_Spec_Form, CC_Spec_Base = loadUiType('ui/ccSpectrometer.ui')
@@ -68,7 +66,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
 
     def init_controlcenter(self): # Init controlcenter
         self.load_params()
-        # Set default tool (manual acquisition) and call setup handler
+        # Set default tool (manual manager) and call setup handler
         self.toolBox.setCurrentIndex(0)
         self.switchPlot()
         # Sequence selector
@@ -76,7 +74,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.seq_selector.currentIndexChanged.connect(self.set_sequence)
         self.seq_selector.setCurrentIndex(0)
         self.set_sequence(0)
-        # Manual acquisition toolbox
+        # Manual manager toolbox
         self.uploadSeq_btn.clicked.connect(self.upload_sequence)
         self.uploadSeq_confirm.setEnabled(False)
         self.manualFreq_input.setKeyboardTracking(False)
@@ -301,8 +299,8 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
             self.data.set_freq(self.data.center_freq)
             self.data.acquire
 
-    def acq_handler(self): # Function to handle current acquisition mode -- called whenever signal received
-        print("Handling acquisition event.")
+    def acq_handler(self): # Function to handle current manager mode -- called whenever signal received
+        print("Handling manager event.")
 
         # Set CC output parameters
         self.load_params()
@@ -331,7 +329,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
             self.freqsweep_run()
             return
 
-        if self.autocenter_flag == True: # Handel autocenter acquisition
+        if self.autocenter_flag == True: # Handel autocenter manager
             self.peaks.append(self.data.peak_value)
             if self.data.peak_value > self.peakValue and self.acqCount>0:
                 # Change peak and center frequency value
@@ -345,7 +343,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
             time.sleep(params.autoTimeout/1000)
             self.freqsweep_run()
 
-        if self.flipangle_flag == True: # Handel flipangle tool acquisition
+        if self.flipangle_flag == True: # Handel flipangle tool manager
             if self.acqCount > 0:
                 self.at_results.append(round(self.data.peak_value, 2))
             self.flipangle_plot() # calls 2-axis plot as well

@@ -13,7 +13,7 @@ import sys
 import csv
 
 # import PyQt5 packages
-from PyQt5.QtWidgets import QMessageBox, QApplication, QFileDialog, QDesktopWidget, QFrame
+from PyQt5.QtWidgets import QMessageBox, QApplication, QFileDialog
 from PyQt5.uic import loadUiType, loadUi
 from PyQt5.QtCore import QRegExp, pyqtSignal, QStandardPaths
 from PyQt5.QtGui import QRegExpValidator, QPixmap
@@ -22,11 +22,11 @@ import matplotlib.pyplot as plt
 from ccSpectrometer import CCSpecWidget
 from ccT2Relaxometer import CCRelaxT2Widget
 from ccT1Relaxometer import CCRelaxT1Widget
-from protocol import ProtocolWidget, CCProtocolWidget
+from protocol import ProtocolWidget
 from cc2DImaging import CC2DImagWidget
 
 from parameters import params
-from dataHandler import data
+from manager.datamanager import data
 from dataLogger import logger
 
 from server import communicationhandler as com

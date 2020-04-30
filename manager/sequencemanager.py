@@ -3,13 +3,12 @@
 
 ## Imports
 from assembler import Assembler
-from server import communicationhandler as com
+from server.communicationhandler import CommunicationHandler as Com
 from globalvars import sqncs
 from parameters import params
-import struct
 
 
-class SequenceHandler:
+class SequenceManager:
 
     def __init__(self):
         self.assembler = Assembler()
@@ -24,7 +23,7 @@ class SequenceHandler:
     def uploadSequence(self, sqnc):
 
         byte_array = self.assembler.assemble(sqnc.path)
-        com.setSequence(byte_array)
+        Com.setSequence(byte_array)
 
         self.flag_sqncs = dict.fromkeys(self.flag_sqncs, False)
         self.flag_sqncs[sqnc.str] = True
@@ -64,7 +63,7 @@ class SequenceHandler:
 
     # Function to set default SIR sequence
     @staticmethod
-    def set_SIR(ti: int = 15):
+    def setSaturationInversionRecovery(ti: int = 15):
         params.ti = ti
         f = open(sqncs.SIR.path, 'r+')  # Open sequence and read lines
         lines = f.readlines()

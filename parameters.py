@@ -16,6 +16,7 @@ from cycler import cycler
 # sys.path.append('ui/breezeStylesheet') # >>> fix system dependency <<<
 import ui.breeze_resources
 
+# TODO: Replace .pkl file through QSettings class
 
 class Parameters:
     def __init__(self):

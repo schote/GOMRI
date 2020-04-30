@@ -4,7 +4,7 @@
 #   Date:       11/27/2019
 #
 #   Manual Acquisition Logger
-#   Logfile that logs the performed action, which is any acquisition,
+#   Logfile that logs the performed action, which is any manager,
 #   any operation from the protocol or a T1/T2 measurement
 #
 ################################################################################

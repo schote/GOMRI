@@ -15,19 +15,18 @@ import time
 import csv
 
 # import PyQt5 packages
-from PyQt5.QtWidgets import QApplication, QWidget, QTableWidget, QTableWidgetItem, QFileDialog, QDesktopWidget
-from PyQt5.uic import loadUiType, loadUi
+from PyQt5.QtWidgets import QApplication, QTableWidgetItem, QFileDialog, QDesktopWidget
+from PyQt5.uic import loadUiType
 from PyQt5.QtCore import Qt, pyqtSignal, QStandardPaths
 
 # import calculation and plot packages
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from parameters import params
-from dataHandler import data
+from manager.datamanager import data
 from dataLogger import logger
 
 Protocol_Form, Protocol_Base = loadUiType('ui/protocol.ui')

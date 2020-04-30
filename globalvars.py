@@ -1,26 +1,27 @@
-class Sequence:
+class SqncObject:
     # Definition of sequence object
     def __init__(self, name, path):
         self.str = name
         self.path = path
 
 class Sequences:
-    def __init__(self):
-        # Define sequences
-        self.FID = Sequence('fid', 'sequence/FID.txt')
-        self.SE = Sequence('se', 'sequence/SE_te.txt')
-        self.IR = Sequence('ir', 'sequence/IR_ti.txt')
-        self.SIR = Sequence('sir', 'sequence/SIR_ti.txt')
-        self.imgSE = Sequence('imgSE', 'sequence/img/2DSE.txt')
+    FID = SqncObject('fid', 'sequence/FID.txt')
+    SE = SqncObject('se', 'sequence/SE_te.txt')
+    IR = SqncObject('ir', 'sequence/IR_ti.txt')
+    SIR = SqncObject('sir', 'sequence/SIR_ti.txt')
+    imgSE = SqncObject('imgSE', 'sequence/img/2DSE.txt')
 
 class Gradients:
-    def __init__(self):
-        # Define Gradients
-        self.X = 0
-        self.Y = 1
-        self.Z = 2
-        self.Z2 = 3
+    X = 0
+    Y = 1
+    Z = 2
+    Z2 = 3
+
+class Relaxations:
+    T1 = 'T1'
+    T2 = 'T2'
 
 
 sqncs = Sequences()
 grads = Gradients()
+rlxs = Relaxations()

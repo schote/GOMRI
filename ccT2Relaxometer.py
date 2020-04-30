@@ -4,28 +4,26 @@
 #   Date:       11/27/2019
 #
 #   T2 Relaxivity Sub Application
-#   Control center for the acquisition of T2, loads and stores parameters,
-#   option to average data points or the whole acquisition,
+#   Control center for the manager of T2, loads and stores parameters,
+#   option to average data points or the whole manager,
 #   executable with SE sequence
 #
 ################################################################################
 
 # import general packages
-import time
 
 # import PyQt5 packages
-from PyQt5.uic import loadUiType, loadUi
+from PyQt5.uic import loadUiType
 from PyQt5.QtCore import pyqtSignal
 
 # import calculation and plot packages
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from parameters import params
-from dataHandler import data
+from manager.datamanager import data
 from dataLogger import logger
 
 CC_RelaxT2_Form, CC_RelaxT2_Base = loadUiType('ui/ccRelaxometerT2.ui')
@@ -111,7 +109,7 @@ class CCRelaxT2Widget(CC_RelaxT2_Base, CC_RelaxT2_Form):
         if avgMeas > 1: self.interactive_plot()
         self.controls.setEnabled(True)
 #_______________________________________________________________________________
-#    Update functions during acquisition
+#    Update functions during manager
 
     def update_dataplot(self):
         print(">> Update plot.")
@@ -163,7 +161,7 @@ class CCRelaxT2Widget(CC_RelaxT2_Base, CC_RelaxT2_Form):
 
         self.call_update.emit()
 #_______________________________________________________________________________
-#   Interactive Plot (post acquisition)
+#   Interactive Plot (post manager)
 
     def interactive_plot(self):
         self.ax1.clear(); self.ax2.clear()

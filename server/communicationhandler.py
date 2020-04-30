@@ -22,7 +22,7 @@ class CommunicationHandler:
     ##  Documentation of a method.
     #   @param ip   The ip address for the connection
     @staticmethod
-    def connectClient(ip):
+    def connectClient(ip: str) -> [bool, int]:
         tcp.connectToHost(ip, 1001)
         tcp.waitForConnected(1000)
 
@@ -34,12 +34,12 @@ class CommunicationHandler:
             return False
         else:
             print("TCP socket in state : ", tcp.state())
-            return tcp.state()
+            return [False, tcp.state()]
 
     ##  Documentation of a method.
     #   Disconnects server and client
     @staticmethod
-    def disconnectClient():
+    def disconnectClient() -> None:
         tcp.disconnectFromHost()
         if tcp.state() is unconnected:
             print("Disconnected from server.")
@@ -47,7 +47,7 @@ class CommunicationHandler:
             print("Connection to server still established.")
 
     @staticmethod
-    def waitForTransmission():
+    def waitForTransmission() -> None:
         while True:
             if not tcp.waitForBytesWritten():
                 break
@@ -55,7 +55,7 @@ class CommunicationHandler:
     ##  Documentation of a method.
     #   @param byte_arr_sequence    Sequence as byte array
     @staticmethod
-    def setSequence(byte_arr_sequence):
+    def setSequence(byte_arr_sequence) -> None:
         tcp.write(struct.pack('<I', 4 << 28))
         tcp.write(byte_arr_sequence)
         while True:  # Wait until bytes written
@@ -64,20 +64,20 @@ class CommunicationHandler:
         sequenceLoaded.emit()
 
     @staticmethod
-    def setFreq(freq):
+    def setFrequency(freq: float) -> None:
         params.freq = freq
         tcp.write(struct.pack('<I', 2 << 28 | int(1.0e6 * freq)))
         print("Set frequency!")
 
     # Function to set attenuation
     @staticmethod
-    def setAttenuation(at):
+    def setAttenuation(at) -> None:
         params.at = at
         tcp.write(struct.pack('<I', 3 << 28 | int(abs(at) / 0.25)))
         print("Set attenuation!")
 
     @staticmethod
-    def setGradients(gx=None, gy=None, gz=None, gz2=None):
+    def setGradients(gx=None, gy=None, gz=None, gz2=None) -> None:
         if gx is not None:
             if np.sign(gx) < 0:
                 sign = 1
@@ -108,19 +108,19 @@ class CommunicationHandler:
                 break
 
     @staticmethod
-    def acquireSpectrum():
+    def acquireSpectrum() -> None:
         tcp.write(struct.pack('<I', 1 << 28))
 
     @staticmethod
-    def acquireProjection(axis: int):
+    def acquireProjection(axis: int) -> None:
         tcp.write(struct.pack('<I', 7 << 28 | axis))
 
     @staticmethod
-    def acquireImage(npe: int = 64, tr: int = 4000):
+    def acquireImage(npe: int = 64, tr: int = 4000) -> None:
         tcp.write(struct.pack('<I', 6 << 28 | npe << 16 | tr))
 
     @staticmethod
-    def readData(size: int) -> [bytearray]:
+    def readData(size: int) -> np.complex_64:
         buffer = bytearray(8 * size)
         while True:  # Read data
             tcp.waitForReadyRead()
@@ -130,7 +130,7 @@ class CommunicationHandler:
             if datasize == 8 * size:
                 print("Readout finished : ", datasize)
                 buffer[0:8 * size] = tcp.read(8 * size)
-                return buffer
+                return np.frombuffer(buffer)
             else:
                 continue
 
