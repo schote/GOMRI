@@ -1,10 +1,28 @@
-##  @package    communicationhandler
-#   @author     David Schote <david.schote@ovgu.de>
-#   @date       25.04.2020
+"""
+Communication Manager
 
-# Imports
+@author:    David Schote
+@contact:   david.schote@ovgu.de
+@version:   1.0
+@change:    02/05/2020
+
+@summary:   Class for managing the communication between server and host.
+            Trigger table (interpreted by server, through 28th bit)
+            0:  no trigger
+            1:  transmit
+            2:  set frequency
+            3:  set attenuation
+            4:  upload sequence
+            5:  set gradient offsets
+            6:  acquire 2D SE image
+            7:  acquire 1D projections
+
+@status:    Under testing
+@todo:
+
+"""
+
 from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
-from PyQt5.QtCore import pyqtSignal
 from globalvars import grads
 from parameters import params
 import numpy as np
@@ -15,14 +33,17 @@ tcp = QTcpSocket()
 connected = QAbstractSocket.ConnectedState
 unconnected = QAbstractSocket.UnconnectedState
 
-sequenceLoaded = pyqtSignal()
-
-class CommunicationHandler:
-
-    ##  Documentation of a method.
-    #   @param ip   The ip address for the connection
+class CommunicationManager():
+    """
+    Communication Manager Class
+    """
     @staticmethod
     def connectClient(ip: str) -> [bool, int]:
+        """
+        Connect server and host through server's ip
+        @param ip:  IP address of the server
+        @return:    Connection state
+        """
         tcp.connectToHost(ip, 1001)
         tcp.waitForConnected(1000)
 
@@ -40,6 +61,10 @@ class CommunicationHandler:
     #   Disconnects server and client
     @staticmethod
     def disconnectClient() -> None:
+        """
+        Disconnects server and host
+        @return:    None
+        """
         tcp.disconnectFromHost()
         if tcp.state() is unconnected:
             print("Disconnected from server.")
@@ -48,6 +73,10 @@ class CommunicationHandler:
 
     @staticmethod
     def waitForTransmission() -> None:
+        """
+        Wait until bytes are written on server
+        @return:    None
+        """
         while True:
             if not tcp.waitForBytesWritten():
                 break
@@ -55,16 +84,28 @@ class CommunicationHandler:
     ##  Documentation of a method.
     #   @param byte_arr_sequence    Sequence as byte array
     @staticmethod
-    def setSequence(byte_arr_sequence) -> None:
+    def setSequence(bytearr_sequence: bytearray) -> bool:
+        """
+        Upload a sequence file to the server
+        @param bytearr_sequence:    Byte array to be uploaded
+        @return:                    None
+        """
         tcp.write(struct.pack('<I', 4 << 28))
-        tcp.write(byte_arr_sequence)
+        tcp.write(bytearr_sequence)
+
         while True:  # Wait until bytes written
             if not tcp.waitForBytesWritten():
                 break
-        sequenceLoaded.emit()
+
+        return True
 
     @staticmethod
     def setFrequency(freq: float) -> None:
+        """
+        Set excitation frequency on the server
+        @param freq:    Frequency in MHz
+        @return:        None
+        """
         params.freq = freq
         tcp.write(struct.pack('<I', 2 << 28 | int(1.0e6 * freq)))
         print("Set frequency!")
@@ -72,12 +113,25 @@ class CommunicationHandler:
     # Function to set attenuation
     @staticmethod
     def setAttenuation(at) -> None:
+        """
+        Set attenuation value on the server
+        @param at:      Attenuation in dB
+        @return:        None
+        """
         params.at = at
         tcp.write(struct.pack('<I', 3 << 28 | int(abs(at) / 0.25)))
         print("Set attenuation!")
 
     @staticmethod
     def setGradients(gx=None, gy=None, gz=None, gz2=None) -> None:
+        """
+        Set gradient offset on the server
+        @param gx:      X-gradient, offset in mA
+        @param gy:      Y-gradient, offset in mA
+        @param gz:      Z-gradient, offset in mA
+        @param gz2:     Z2-gradient, offset in mA
+        @return:        None
+        """
         if gx is not None:
             if np.sign(gx) < 0:
                 sign = 1
@@ -101,7 +155,7 @@ class CommunicationHandler:
                 sign = 1
             else:
                 sign = 0
-            # tcp.write(struct.pack('<I', 5 << 28 | grads.Z2 << 24 | sign << 20 | abs(gz2)))
+            tcp.write(struct.pack('<I', 5 << 28 | grads.Z2 << 24 | sign << 20 | abs(gz2)))
 
         while True:  # Wait until bytes written
             if not tcp.waitForBytesWritten():
@@ -109,18 +163,39 @@ class CommunicationHandler:
 
     @staticmethod
     def acquireSpectrum() -> None:
+        """
+        Trigger spectrum acquisition
+        @return:    None
+        """
         tcp.write(struct.pack('<I', 1 << 28))
 
     @staticmethod
-    def acquireProjection(axis: int) -> None:
-        tcp.write(struct.pack('<I', 7 << 28 | axis))
+    def acquireProjection(p_axis: int) -> None:
+        """
+        Trigger projection acquisition
+        @param p_axis:    Axis of projection (property)
+        @return:        None
+        """
+        # TODO: Check whether axis is defined globally or not
+        tcp.write(struct.pack('<I', 7 << 28 | p_axis))
 
     @staticmethod
-    def acquireImage(npe: int = 64, tr: int = 4000) -> None:
-        tcp.write(struct.pack('<I', 6 << 28 | npe << 16 | tr))
+    def acquireImage(p_npe: int = 64, p_tr: int = 4000) -> None:
+        """
+        Trigger image acquisition
+        @param p_npe:   Number of phase encoding steps (property)
+        @param p_tr:    Repetition time in ms (property)
+        @return:        None
+        """
+        tcp.write(struct.pack('<I', 6 << 28 | p_npe << 16 | p_tr))
 
     @staticmethod
-    def readData(size: int) -> np.complex_64:
+    def readData(size: int) -> np.complex64:
+        """
+        Perform a readout by receiving acquired data from server
+        @param size:    Size of byte array to be read
+        @return:        Complex data
+        """
         buffer = bytearray(8 * size)
         while True:  # Read data
             tcp.waitForReadyRead()
@@ -135,5 +210,4 @@ class CommunicationHandler:
                 continue
 
 
-com: CommunicationHandler = CommunicationHandler()
-
+Com = CommunicationManager()

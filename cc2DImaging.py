@@ -26,7 +26,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 from parameters import params
-from manager.datamanager import data
+#from manager.datamanager import data
 
 CC_2DImag_Form, CC_2DImag_Base = loadUiType('ui/cc2DImag.ui')
 
