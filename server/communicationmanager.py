@@ -96,6 +96,7 @@ class CommunicationManager():
         while True:  # Wait until bytes written
             if not tcp.waitForBytesWritten():
                 break
+            # TODO: Include condition to break loop after certain time -> return false
 
         return True
 

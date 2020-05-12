@@ -50,9 +50,9 @@ class SequenceManager(QObject):
 
         self.flag_sqncs = dict.fromkeys(self.flag_sqncs, False)
         self.flag_sqncs[sqnc.str] = True
-        if upload is True:
-            self.sequenceUploaded.emit()
+
         print("\n {} sequence uploaded.".format(sqnc.str))
+        return upload
 
     # Function to change TE in sequence
     @staticmethod

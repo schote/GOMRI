@@ -1,31 +1,25 @@
-################################################################################
-#
-#   Author:     David Schote (david.schote@ovgu.de)
-#   Date:       11/27/2019
-#
-#   Spectrometer Sub Application
-#   Control center for the manager sequence, to obtain the probes spectrum
-#   loads and stores parameters, executable with FID, SE, IR, SIR or
-#   manual sequence
-#   Tools:
-#           - auto center tool
-#           - transmit adjust (flipangle tool)
-#           - set shim currents
-#
-################################################################################
+"""
+Spectrometer Controlcenter
+
+@author:    David Schote
+@contact:   david.schote@ovgu.de
+@version:   2.0
+@change:    11/05/2020
+
+@summary:   Class the spectrometer sub application.
+
+@status:    Under development/testing
+@todo:      Connect plotview class, store UI through QSettings package, implementation of logger
+
+"""
 
 # import general packages
-import time
-import csv
 
-# import PyQt5 packages
+import csv
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.uic import loadUiType
 from PyQt5.QtCore import pyqtSignal, QStandardPaths
-
-# import calculation and plot packages
 import numpy as np
-from scipy.optimize import curve_fit
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -39,15 +33,17 @@ from dataLogger import logger
 
 CC_Spec_Form, CC_Spec_Base = loadUiType('ui/ccSpectrometer.ui')
 
-
 class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
+    """
+    Controlcenter spectrometer widget class
+    """
     call_update = pyqtSignal()
+    acquiredData: Data
 
     def __init__(self):
         super(CCSpecWidget, self).__init__()
         self.setupUi(self)
 
-        #AcqMngr.readoutFinished.connect(self.acq_handler)
         SqncMngr.sequenceUploaded.connect(self.sequence_uploaded)
 
         self.acqmngr = AcquisitionManager()
@@ -61,31 +57,21 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.ax2 = self.fig.add_subplot(3, 1, 2)
         self.ax3 = self.fig.add_subplot(3, 1, 3)
 
-        self.init_controlcenter()
-
-        self.autocenter_flag = False
-        self.flipangle_flag = False
-        self.freqsweep_flag = False
-        self.peakValue = 0
-        self.centerValue = 0
-        self.acqCount = 0
+        self.initUI()
 
         self.toolBox.currentChanged.connect(self.switchPlot)
 
-    def init_controlcenter(self):
+    def initUI(self):
         self.load_params()
         # Set default tool (manual manager) and call setup handler
         self.toolBox.setCurrentIndex(0)
-        self.switchPlot()
         # Sequence selector
         self.seq_selector.addItems(
-            ['Free Induction Decay', 'Spin Echo', 'Inversion Recovery', 'Saturation Inversion Recovery',
-             'Custom Sequence'])
-        self.seq_selector.currentIndexChanged.connect(self.set_sequence)
+            [sqncs.FID.str, sqncs.SE.str, sqncs.IR.str, sqncs.SIR.str, "Custom Sequence"])
+        self.seq_selector.currentIndexChanged.connect(self.setSequence)
         self.seq_selector.setCurrentIndex(0)
-        self.set_sequence(0)
         # Manual manager toolbox
-        self.uploadSeq_btn.clicked.connect(self.upload_sequence)
+        self.uploadSeq_btn.clicked.connect(self.uploadSequence)
         self.uploadSeq_confirm.setEnabled(False)
         self.manualFreq_input.setKeyboardTracking(False)
         self.manualAt_input.setKeyboardTracking(False)
@@ -111,7 +97,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.flipangle_save_btn.clicked.connect(self.save_flipangle)
         self.flipangle_save_btn.setEnabled(False)
         # Shim tool
-        self.setOffset_btn.clicked.connect(self.set_grad_offsets)
+        self.setOffset_btn.clicked.connect(self.setGradientOffsets)
         # Output parameters
         self.freq_output.setReadOnly(True)
         self.at_output.setReadOnly(True)
@@ -122,138 +108,37 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
 
         self.call_update.emit()
 
-    def reset_variables(self):
-        # Initialization of values for autocenter and flipangle tool
-        self.autocenter_flag = False
-        self.flipangle_flag = False
-        self.freqsweep_flag = False
-        self.peakValue = 0
-        self.centerValue = 0
-        self.acqCount = 0
-
-    def init_autocenter(self):
-        # Setup values and axis
-        self.init_vars()
-        self.ax1.clear();
-        self.ax2.clear();
-        self.ax3.clear()
-        self.progressBar.setValue(0)
-        self.autocenter_flag = True
-        self.peaks = []
-
-        # Read input values
-        params.autoSpan = self.freqSpan_input.value()
-        params.autoStep = self.freqSteps_input.value()
-        params.autoTimeout = self.freqTimeout_input.value()
-        logger.add('AUC')
-
-        self.freqSpace = np.linspace(params.freq - params.autoSpan / 2, params.freq + params.autoSpan / 2, \
-                                     params.autoStep)
-
-        print("Frequency space : ", self.freqSpace)
-
-        # Disable controls and start
-        self.disable_controls()
-        self.freqsweep_run()
-
-    def init_averaging(self):
-        # Initialization of variables and arrays to sum data
-        self.init_vars()
-        self.timeout = 5  # Default timeout for averaging (5s)
-        self.freqsweep_flag = True
-        self.autoCenter_save_btn.setEnabled(False)
-
-        self.fft_mag_avg = [0] * self.data.data_idx
-        self.t_mag_avg = [0] * self.data.data_idx
-        self.t_real_avg = [0] * self.data.data_idx
-        self.t_imag_avg = [0] * self.data.data_idx
-
-        # Create array with actual frequency
-        params.avgCyc = self.manualAvg_input.value()
-        self.freqSpace = [params.freq] * (params.avgCyc)
-
-        # Disable Controls and start
-        self.disable_controls()
-        self.freqsweep_run()
-
-    def init_flipangle(self):
-        # Setup values and axis
-        self.init_vars()
-        self.at_results = []
-        self.ax1.clear();
-        self.ax2.clear();
-        self.ax3.clear()
-        self.progressBar.setValue(0)
-        self.flipangle_save_btn.setEnabled(False)
-        self.flipangle_flag = True
-
-        # Read input parameters and
-        params.flipStart = self.atStart_input.value()
-        params.flipEnd = self.atEnd_input.value()
-        params.flipStep = self.atSteps_input.value()
-        params.flipTimeout = self.atTimeout_input.value()
-        logger.add('FLA')
-
-        self.data.set_freq(params.freq)
-        self.at_values = np.around(np.linspace(params.flipStart, params.flipEnd, params.flipStep) * 4) / 4
-        print("Attenuation values : ", self.at_values)
-
-        # Disable controls and start
-        self.disable_controls()
-        self.flipangle_run()
-
     # _______________________________________________________________________________
     #   Control Toolbox: Switch views depending on toolbox
 
     def switchPlot(self):
-        def two_ax():
-            if len(self.fig.axes) is 2:
-                return
-            self.fig.clear()  # ; self.fig.set_facecolor("None")
+        idx = self.toolBox.currentIndex()
+        self.fig.clear()
+
+        if idx is 0:
             self.ax1 = self.fig.add_subplot(2, 1, 1)
             self.ax2 = self.fig.add_subplot(2, 1, 2)
-            # self.fig.delaxes(self.ax3)
-
-        def three_ax(self):
-            if len(self.fig.axes) is 3:
-                return
-            self.fig.clear()  # ; self.fig.set_facecolor("None")
+            self.progressBar_container.setVisible(False)
+        elif idx is 3:
+            self.ax1 = self.fig.add_subplot(2, 1, 1)
+            self.ax2 = self.fig.add_subplot(2, 1, 2)
+            self.progressBar_container.setVisible(True)
+        else:
             self.ax1 = self.fig.add_subplot(3, 1, 1)
             self.ax2 = self.fig.add_subplot(3, 1, 2)
             self.ax3 = self.fig.add_subplot(3, 1, 3)
-            # self.fig.add_axes(self.ax3)
-
-        self.progressBar_container.setVisible(True)
-
-        self.update_params()
-        params.saveFile()
-        idx = self.toolBox.currentIndex()
-        plotViews = {
-            0: two_ax,
-            1: three_ax,
-            2: three_ax,
-            3: two_ax
-        }
-        plotViews[idx]
-
-        if idx is 0:
-            print("-> Manual Acquisition Controlcenter")
-            self.progressBar_container.setVisible(False)
-        if idx is 1:
-            print("-> Autocenter Conntrolcenter")
-        if idx is 2:
-            print("-> Flipangletool Controlcenter")
-        if idx is 3:
-            print("-> Shimmingtool Controlcenter")
+            self.progressBar_container.setVisible(True)
 
         self.load_params()
         self.fig_canvas.draw()
         self.call_update.emit()
 
-    # _______________________________________________________________________________
-    #   Control Acquisition and Data Processing
-
-    def set_sequence(self, idx):  # Function to switch current sequence
+    def setSequence(self, idx) -> None:
+        """
+        Set sequence from drop down menu
+        @param idx:     Selected index from drop down menu
+        @return:        None
+        """
         self.manualTI_input.setVisible(False)
         self.manualTILabel.setVisible(False)
         self.manualTE_input.setVisible(False)
@@ -261,49 +146,48 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.uploadSeq_btn.setVisible(False)
         self.uploadSeq_confirm.setVisible(False)
 
-        seq = {
-            0: SqncMngr.packSequence(sqncs.FID),  # self.data.set_FID,
-            1: SqncMngr.packSequence(sqncs.SE),  # self.data.set_SE,
-            2: SqncMngr.packSequence(sqncs.IR),  # self.data.set_IR,
-            3: SqncMngr.packSequence(sqncs.SIR),  # self.data.set_SIR,
-            4: self.customSeq
-        }
-
-        if idx == 1:
+        if idx is 0:  # Free induction decay
+            SqncMngr.packSequence(sqncs.FID)
+        elif idx is 1:  # Spin echo
             self.manualTE_input.setVisible(True)
             self.manualTELabel.setVisible(True)
-        elif idx == 2 or idx == 3:
+            SqncMngr.packSequence(sqncs.SE)
+        elif idx is 2 or idx is 3:  # IR or SIR
             self.manualTI_input.setVisible(True)
             self.manualTILabel.setVisible(True)
-            if idx == 2:
+            if idx is 2:  # Inversion recovery
                 self.manualTI_input.disconnect()
                 self.manualTI_input.valueChanged.connect(SqncMngr.setInversionRecovery)
-            else:
+                SqncMngr.packSequence(sqncs.IR)
+            else:  # Saturation inversion recovery
                 self.manualTI_input.disconnect()
                 self.manualTI_input.valueChanged.connect(SqncMngr.setSaturationInversionRecovery)
+                SqncMngr.packSequence(sqncs.SIR)
+        else:  # Custom sequence
+            self.uploadSeq_btn.setVisible(True)
+            self.uploadSeq_confirm.setVisible(True)
+            self.uploadSeq_confirm.setChecked(False)
+            self.disable_controls()
 
-        seq[idx]
-
-    def customSeq(self):
-        self.uploadSeq_btn.setVisible(True)
-        self.uploadSeq_confirm.setVisible(True)
-        self.uploadSeq_confirm.setChecked(False)
-        self.disable_controls()
-
-    def upload_sequence(self):
+    def uploadSequence(self) -> None:
+        """
+        Upload sequence from file dialog
+        @return:    None
+        """
         print("Upload Sequence")
         sequence = QFileDialog.getOpenFileName(self, 'Upload Custom Sequence',
                                                QStandardPaths.writableLocation(QStandardPaths.DocumentsLocation),
                                                'Textfile (*.txt)')
-        SqncMngr.packSequence(sequence[0])
-        # self.data.set_uploaded_seq(sequence[0])
-
-    def sequence_uploaded(self):
-        self.uploadSeq_confirm.setChecked(True)
+        status = SqncMngr.packSequence(sequence[0])
+        if status is True:
+            self.uploadSeq_confirm.setChecked(True)
         self.enable_controls()
 
-    def set_grad_offsets(self):
-
+    def setGradientOffsets(self) -> None:
+        """
+        Set gradient offset values in parameters and on console
+        @return:    None
+        """
         params.grad[0] = self.xOffset_input.value()
         params.grad[1] = self.yOffset_input.value()
         params.grad[2] = self.zOffset_input.value()
@@ -314,153 +198,64 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         # self.data.set_gradients(params.grad[0], params.grad[1], params.grad[2], params.grad[3])
         # self.data.acquire
 
-    def start_manual(self):
-        if self.manualAvg_enable.isChecked():
-            self.init_averaging()
-        else:
-            [self.acquiredData, _] = self.acqmngr.get_spectrum(params.freq)
-            print(self.acquiredData.f_fftMagnitude)
-            self.acq_handler()
-            # self.data.acquire
-
-    def manual_center(self):  # Function to apply the center frequency manually
-        if self.data.center_freq != 'nan':
-            self.manualFreq_input.setValue(round(self.data.center_freq, 5))
-            [_, _, _, center] = Data.get_peakparameters(params.freq)
-            Com.setFrequency(center)
-            self.acquiredData = self.acqmngr.get_spectrum(params.freq)
-            #self.acq_handler()
-            #self.data.set_freq(self.data.center_freq)
-            #self.data.acquire
-
-    def acq_handler(self):  # Function to handle current manager mode -- called whenever signal received
-        print("Handling manager event.")
-
-        # Set CC output parameters
-        self.load_params()
-        [fPeakValue, _, _, fCenter] = self.acquiredData.get_peakparameters()
-        #[_, _, fwhmPPM] = self.acquiredData.get_fwhm()
-        #snr = self.acquiredData.get_snr()
-        self.set_output(params.freq, params.at, fCenter, fPeakValue, 0, 0)
-        self.two_ax_plot()
-        print("TESTSTATEMENT!")
+    def measureSpectrum(self, frequency: list, sampletime: int = 10) -> None:
         """
-        if self.seq_selector.currentIndex() == 0:
-            logger.add('ACQ', seq='FID', \
-                       peak=self.data.peak_value, fwhm=self.data.fwhm_value, snr=self.data.snr)
-        elif self.seq_selector.currentIndex() == 1:
-            logger.add('ACQ', seq='SE', \
-                       peak=self.data.peak_value, fwhm=self.data.fwhm_value, snr=self.data.snr)
-        elif self.seq_selector.currentIndex() == 2:
-            logger.add('ACQ', seq='IR', \
-                       peak=self.data.peak_value, fwhm=self.data.fwhm_value, snr=self.data.snr)
-        elif self.seq_selector.currentIndex() == 3:
-            logger.add('ACQ', seq='SIR', \
-                       peak=self.data.peak_value, fwhm=self.data.fwhm_value, snr=self.data.snr)
-        else:
-            print("No log entry, unknown sequence.")
-        
-        # Make log entry
-
-        if self.manualAvg_enable.isChecked():  # Handel averaging and manual trigger
-            self.fft_mag_avg = np.add(self.fft_mag_avg, self.data.fft_mag)
-            self.t_mag_avg = np.add(self.t_mag_avg, self.data.mag_t)
-            self.t_real_avg = np.add(self.t_real_avg, self.data.real_t)
-            self.t_imag_avg = np.add(self.t_imag_avg, self.data.imag_t)
-            self.two_ax_plot()
-            time.sleep(self.timeout)
-            self.freqsweep_run()
-            return
-
-        if self.autocenter_flag == True:  # Handel autocenter manager
-            self.peaks.append(self.data.peak_value)
-            if self.data.peak_value > self.peakValue and self.acqCount > 0:
-                # Change peak and center frequency value
-                self.peakValue = self.data.peak_value
-                self.centerValue = self.data.center_freq
-                self.autocenter_output.setText(str(round(self.centerValue, 4)))
-            self.autocenter_plot()  # calls 2-axis plot as well
-            self.progressBar.setValue(self.acqCount / len(self.freqSpace) * 100)
-            self.call_update.emit()
-
-            time.sleep(params.autoTimeout / 1000)
-            self.freqsweep_run()
-
-        if self.flipangle_flag == True:  # Handel flipangle tool manager
-            if self.acqCount > 0:
-                self.at_results.append(round(self.data.peak_value, 2))
-            self.flipangle_plot()  # calls 2-axis plot as well
-            self.progressBar.setValue(self.acqCount / len(self.at_values) * 100)
-            self.call_update.emit()
-
-            time.sleep(params.flipTimeout / 1000)
-            self.flipangle_run()
-
-        else:
-            self.two_ax_plot()  # Calls two axis plot for manual trigger
-        
+        Measure spectrum for a list of frequencies
+        @param frequency:       List of frequencies/frequency value for TX
+        @param sampletime:      RX sample time
+        @return:                None
         """
+        self.disable_controls()
+        self.ax3.clear()
 
-    def freqsweep_run(self):  # Function for performing multiple freq acquisitions
-        if self.acqCount < len(self.freqSpace):
-            params.freq = self.freqSpace[self.acqCount]
-            print("\nAcquisition counter: ", self.acqCount + 1, "/", len(self.freqSpace), ":")
-            self.acqCount += 1
-            self.data.set_freq(round(params.freq, 5))
-            self.data.acquire
-        else:
-            print("autocenter finished.")
-            if self.autocenter_flag == True:
-                params.freq = self.centerValue
-                self.manualFreq_input.setValue(params.freq)
-                self.autoCenter_save_btn.setEnabled(True)
-                self.autocenter_flag = False
-                print("set peak frequency: ", self.centerValue)
-                self.data.set_freq(self.centerValue)
-                self.data.acquire
-            self.enable_controls()
+        for fValue in frequency:
+            [data, _] = self.acqmngr.get_spectrum(fValue, sampletime)
 
-    def flipangle_run(self):  # Function for performing multiple AT acquisitions
-        if self.acqCount < len(self.at_values):
-            params.at = self.at_values[self.acqCount]
-            print("\nAcquisition counter: ", self.acqCount + 1, "/", len(self.at_values), ":")
-            self.acqCount += 1
-            self.data.set_at(params.at)
-            self.data.acquire
-        else:
-            self.flipangle_flag = False
-            self.enable_controls()
-            # init optional
-            # init = [np.max(self.at_results), 1/(self.at_values[-1]-self.at_values[0]), np.min(self.at_results)]
-            init = [np.max(self.at_results), 1 / 15, np.min(self.at_results)]
+            [fPeakValue, _, fCenter] = data.get_peakparameters()
+            self.set_output(fValue, params.at, fCenter, fPeakValue, 0, 0)
+            self.twoAxPlot(data)
 
-            self.flipangle_save_btn.setEnabled(True)
+        self.enable_controls()
+        self.acquiredData = data
 
-            try:
-                self.fit_x, self.fit_at = self.fit_At(init)
-                self.ax3.plot(self.fit_x, self.fit_at)
-                self.fig_canvas.draw()
-            except:
-                print('ERROR: No fit found.')
-                self.ax3.plot(abs(self.at_values), self.at_results)
-                self.fig_canvas.draw()
+    def transmitAdjust(self, fValue: float, attenuation: list) -> None:
+        """
+        Transmit adjust to calibrate TX power
+        @param fValue:          TX frequency value
+        @param attenuation:     List of attenuation values
+        @return:                None
+        """
+        self.disable_controls()
+        self.ax3.clear()
 
-            self.atPeak_output.setText(str(round(np.max(self.at_results), 2)))
-            self.atMax_output.setText(str(round(self.at_values[np.argmax(self.at_results)], 2)))
-            self.manualAt_input.setValue(self.at_values[np.argmax(self.at_results)])
+        for atValue in attenuation:
+            Com.setAttenuation(atValue)
+            Com.waitForTransmission()
 
-    def fit_At(self, init):  # Function that is optimizing the fit
-        # parameters = sol(func, x, y, init, method)
-        params, params_covariance = curve_fit(self.at_func, self.at_values, self.at_results, init, method='lm')
-        x = np.arange(self.at_values[0], self.at_values[-1] + 1, 0.1)
-        fit = self.at_func(x, params[0], params[1], params[2])
-        return x, fit
+            [data, _] = self.acqmngr.get_spectrum(fValue)
+            [fPeakValue, tSignalValue, _, fCenter] = data.get_peakparameters()
 
-    def at_func(self, x, a, b, c):  # Structure of sinus fitting for attenuation
-        return abs(a * np.sin(b * x) + c)
+            self.set_output(fValue, params.at, fCenter, fPeakValue, 0, 0)
+            atData = {"attenuation [dB]": params.at, "signal maximum": tSignalValue}
+            self.threeAxPlot(data, atData)
 
-    # _______________________________________________________________________________
-    #   Set Output Parameters
+        self.acquiredData = data
+        self.atPeak_output.setText(str(round(np.max(self.at_results), 2)))
+        self.atMax_output.setText(str(round(self.at_values[np.argmax(self.at_results)], 2)))
+        self.manualAt_input.setValue(self.at_values[np.argmax(self.at_results)])
+        self.enable_controls()
+
+    def findLarmorFrequency(self, fValue: float):
+        print("Find Larmor frequency around {}".format(fValue))
+
+    def setCenterFrequency(self) -> None:
+        """
+        Get and set real Larmor frequency, when data is available (requires previous acquisition)
+        @return:    None
+        """
+        if self.acquiredData.f_fftMagnitude.size is not 0:
+            [_, _, _, center] = self.acquiredData.get_peakparameters(params.freq)
+            self.acquiredData = self.acqmngr.get_spectrum(center)
 
     def set_output(self, freq, at, center, peak, fwhm, snr):  # Setting all outputs
         self.freq_output.setText(str(round(freq, 5)))
@@ -508,35 +303,18 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
     # _______________________________________________________________________________
     #   Plotting Data
 
-    def two_ax_plot(self):
-        """
-        if self.manualAvg_enable.isChecked():
-            mag_t = self.t_mag_avg / self.acqCount
-            real_t = self.t_real_avg / self.acqCount
-            imag_t = self.t_imag_avg / self.acqCount
-            fft_mag = self.fft_mag_avg / self.acqCount
-        else:
-            mag_t = self.data.mag_t
-            real_t = self.data.real_t
-            imag_t = self.data.imag_t
-            fft_mag = self.data.fft_mag
-        """
-
-        print(self.acquiredData.f_fftMagnitude)
+    def twoAxPlot(self, data: Data):
 
         self.ax1.clear()
-        self.ax1.plot(self.acquiredData.f_axis, self.acquiredData.f_fftMagnitude/max(self.acquiredData.f_fftMagnitude))
-        #self.ax1.plot(self.data.freqaxis[int(self.data.data_idx / 2 - self.data.data_idx / 10):int(
-         #   self.data.data_idx / 2 + self.data.data_idx / 10)],
-          #            fft_mag[int(self.data.data_idx / 2 - self.data.data_idx / 10):int(
-           #               self.data.data_idx / 2 + self.data.data_idx / 10)] / max(fft_mag))
+        self.ax1.plot(data.f_axis, data.f_fftMagnitude / max(data.f_fftMagnitude))
+        # self.ax1.plot(self.data.freqaxis[int(self.data.data_idx / 2 - self.data.data_idx / 10):int(
+        #   self.data.data_idx / 2 + self.data.data_idx / 10)],
+        #            fft_mag[int(self.data.data_idx / 2 - self.data.data_idx / 10):int(
+        #               self.data.data_idx / 2 + self.data.data_idx / 10)] / max(fft_mag))
         self.ax2.clear()
-        self.ax2.plot(self.acquiredData.t_axis, self.acquiredData.t_magnitude, label='Magnitude')
-        self.ax2.plot(self.acquiredData.t_axis, self.acquiredData.t_real, label='Real Part')
-        self.ax2.plot(self.acquiredData.t_axis, self.acquiredData.t_imag, label='Imaginary Part')
-        #self.ax2.plot(self.data.time_axis, mag_t, label='Magnitude')
-        #self.ax2.plot(self.data.time_axis, real_t, label='Real')
-        #self.ax2.plot(self.data.time_axis, imag_t, label='Imaginary')
+        self.ax2.plot(data.t_axis, data.t_magnitude, label='Magnitude')
+        self.ax2.plot(data.t_axis, data.t_real, label='Real Part')
+        self.ax2.plot(data.t_axis, data.t_imag, label='Imaginary Part')
         self.ax1.set_ylabel('relative frequency spectrum')
         self.ax1.set_xlabel('frequency [Hz]')
         self.ax2.set_ylabel('RX signal [mV]')
@@ -546,19 +324,12 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
 
         self.call_update.emit()
 
-    def autocenter_plot(self):
-        self.ax3.plot(self.data.center_freq, self.peaks[-1] / max(self.peaks), 'x', color='#33A4DF')
-        self.ax3.set_xlabel('center frequency [MHz]')
-        self.ax3.set_ylabel('signal maxima')
-        self.two_ax_plot()
+    def threeAxPlot(self, data: Data, thirdAxisData: dict):
+        self.twoAxPlot(data)
 
-    def flipangle_plot(self):
-        self.ax3.clear()
-        self.ax3.plot(abs(self.at_values[0:self.acqCount]), self.at_results / max(self.at_results), 'x',
-                      color='#33A4DF')
-        self.ax3.set_xlabel('attenuation [dB]')
-        self.ax3.set_ylabel('signal maxima')
-        self.two_ax_plot()
+        self.ax3.plot(list(thirdAxisData.values())[0], list(thirdAxisData.values())[1], 'x', color='#33A4DF')
+        self.ax3.set_xlabel(list(thirdAxisData.keys())[0])
+        self.ax3.set_ylabel(list(thirdAxisData.keys())[1])
 
     # _______________________________________________________________________________
     #   Save Data

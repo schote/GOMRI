@@ -25,11 +25,11 @@ class Sequences:
     """
     Class with predefined sequences as sequence objects
     """
-    FID = SqncObject('fid', 'sequence/FID.txt')
-    SE = SqncObject('se', 'sequence/SE_te.txt')
-    IR = SqncObject('ir', 'sequence/IR_ti.txt')
-    SIR = SqncObject('sir', 'sequence/SIR_ti.txt')
-    imgSE = SqncObject('imgSE', 'sequence/img/2DSE.txt')
+    FID = SqncObject('Free Induction Decay', 'sequence/FID.txt')
+    SE = SqncObject('Spin Echo', 'sequence/SE_te.txt')
+    IR = SqncObject('Inversion Recovery', 'sequence/IR_ti.txt')
+    SIR = SqncObject('Saturation Inversion Recovery', 'sequence/SIR_ti.txt')
+    imgSE = SqncObject('Spin Echo for Imaging', 'sequence/img/2DSE.txt')
 
 
 class Gradients:
