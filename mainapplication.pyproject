@@ -1,0 +1,8 @@
+{
+    "files":
+        ["mainapplication.py",
+        "manager/acquisitionmanager.py",
+        "manager/datamanager.py",
+        "manager/sequencemanager.py",
+        "view.qml"]
+}
