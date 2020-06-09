@@ -7,14 +7,12 @@
 #
 ################################################################################
 
-import sys
 import struct
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 
 from TCPsocket import socket, connected, unconnected
-from dataHandler import data
 from assembler import assembler
 
 #-------------------------------------------------------------------------------
@@ -89,7 +87,7 @@ socket.write(byte_array)
 while(True): # Wait until bytes written
     if not socket.waitForBytesWritten(): break
 
-# Test 2D SE acquisition
+# Test 2D SE manager
 #socket.write(struct.pack('<I', 6 << 28 | npe))
 
 # Test FID

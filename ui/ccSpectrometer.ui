@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>300</width>
-    <height>837</height>
+    <height>862</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -227,7 +227,7 @@
       <item>
        <widget class="QToolBox" name="toolBox">
         <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+         <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
           <horstretch>0</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
@@ -280,8 +280,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>274</width>
-           <height>253</height>
+           <width>262</width>
+           <height>259</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -294,7 +294,7 @@
           <bool>true</bool>
          </property>
          <attribute name="label">
-          <string>Manual Acquisition</string>
+          <string>Spectrum Acquisition</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_4">
           <property name="spacing">
@@ -820,8 +820,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>274</width>
-           <height>218</height>
+           <width>260</width>
+           <height>242</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -834,7 +834,7 @@
           <bool>true</bool>
          </property>
          <attribute name="label">
-          <string>Autocenter Tool</string>
+          <string>Frequency Calibration</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_2">
           <property name="spacing">
@@ -1271,8 +1271,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>274</width>
-           <height>245</height>
+           <width>260</width>
+           <height>269</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -1285,7 +1285,7 @@
           <bool>true</bool>
          </property>
          <attribute name="label">
-          <string>Flipangle Tool</string>
+          <string>Transmit Power Adjust</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <property name="spacing">
@@ -1831,8 +1831,8 @@
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>274</width>
-           <height>241</height>
+           <width>260</width>
+           <height>250</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -1845,7 +1845,7 @@
           <bool>true</bool>
          </property>
          <attribute name="label">
-          <string>Shim Tool</string>
+          <string>Active Shimming</string>
          </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <property name="spacing">
@@ -2437,6 +2437,12 @@
            <property name="mouseTracking">
             <bool>false</bool>
            </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
+           </property>
            <property name="frame">
             <bool>false</bool>
            </property>
@@ -2510,6 +2516,12 @@
            <property name="mouseTracking">
             <bool>false</bool>
            </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
+           </property>
            <property name="frame">
             <bool>false</bool>
            </property>
@@ -2580,6 +2592,12 @@
            <property name="mouseTracking">
             <bool>false</bool>
            </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
+           </property>
            <property name="frame">
             <bool>false</bool>
            </property>
@@ -2621,7 +2639,7 @@
           </widget>
          </item>
          <item row="4" column="0">
-          <widget class="QLabel" name="fwhmLabel">
+          <widget class="QLabel" name="hz_fwhmLabel">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -2679,6 +2697,12 @@
            <property name="mouseTracking">
             <bool>false</bool>
            </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
+           </property>
            <property name="frame">
             <bool>false</bool>
            </property>
@@ -2691,7 +2715,7 @@
           </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QLineEdit" name="fwhm_output">
+          <widget class="QLineEdit" name="hz_fwhm_output">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -2720,6 +2744,12 @@
            <property name="mouseTracking">
             <bool>false</bool>
            </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
+           </property>
            <property name="frame">
             <bool>false</bool>
            </property>
@@ -2731,8 +2761,8 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="label_3">
+         <item row="6" column="0">
+          <widget class="QLabel" name="snrLabel">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -2760,7 +2790,7 @@
            </property>
           </widget>
          </item>
-         <item row="5" column="1">
+         <item row="6" column="1">
           <widget class="QLineEdit" name="snr_output">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -2790,11 +2820,63 @@
            <property name="mouseTracking">
             <bool>false</bool>
            </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
+           </property>
            <property name="frame">
             <bool>false</bool>
            </property>
            <property name="alignment">
             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+           </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="ppm_fwhmLabel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>FWHM [ppm]</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLineEdit" name="ppm_fwhm_output">
+           <property name="minimumSize">
+            <size>
+             <width>80</width>
+             <height>22</height>
+            </size>
+           </property>
+           <property name="mouseTracking">
+            <bool>false</bool>
+           </property>
+           <property name="acceptDrops">
+            <bool>false</bool>
+           </property>
+           <property name="toolTipDuration">
+            <number>-1</number>
            </property>
            <property name="readOnly">
             <bool>true</bool>

@@ -26,6 +26,7 @@ import struct
 class Assembler:
 	def __init__(self):
 		self.pc = 0
+
 		opcode_table = {
 			'NOP' : ['000000'],
 			'DEC' : ['000001', 'A'],

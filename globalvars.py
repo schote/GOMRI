@@ -1,26 +1,63 @@
-class Sequence:
-    # Definition of sequence object
+"""
+Global Variables and Objects
+
+@author:    David Schote
+@contact:   david.schote@ovgu.de
+@version:   1.0
+@change:    02/05/2020
+
+@summary:   Global variables
+
+"""
+
+class SqncObject:
+    """
+    Sequence object class
+    """
     def __init__(self, name, path):
         self.str = name
         self.path = path
 
+
 class Sequences:
-    def __init__(self):
-        # Define sequences
-        self.FID = Sequence('fid', 'sequence/FID.txt')
-        self.SE = Sequence('se', 'sequence/SE_te.txt')
-        self.IR = Sequence('ir', 'sequence/IR_ti.txt')
-        self.SIR = Sequence('sir', 'sequence/SIR_ti.txt')
-        self.imgSE = Sequence('imgSE', 'sequence/img/2DSE.txt')
+    """
+    Class with predefined sequences as sequence objects
+    """
+    FID = SqncObject('Free Induction Decay', 'sequence/FID.txt')
+    SE = SqncObject('Spin Echo', 'sequence/SE_te.txt')
+    IR = SqncObject('Inversion Recovery', 'sequence/IR_ti.txt')
+    SIR = SqncObject('Saturation Inversion Recovery', 'sequence/SIR_ti.txt')
+    imgSE = SqncObject('Spin Echo for Imaging', 'sequence/img/2DSE.txt')
+
 
 class Gradients:
-    def __init__(self):
-        # Define Gradients
-        self.X = 0
-        self.Y = 1
-        self.Z = 2
-        self.Z2 = 3
+    """
+    Definition of gradients
+    """
+    X = 0
+    Y = 1
+    Z = 2
+    Z2 = 3
 
 
+class Relaxations:
+    """
+    Definition of relaxation times
+    """
+    T1 = 'T1'
+    T2 = 'T2'
+
+class ProjectionAxes:
+    """
+    Definition of projection axes
+    """
+    x = 0
+    y = 1
+    z = 2
+
+
+# Instances
 sqncs = Sequences()
 grads = Gradients()
+rlxs = Relaxations()
+pax = ProjectionAxes()

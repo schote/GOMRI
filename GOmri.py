@@ -13,7 +13,7 @@ import sys
 import csv
 
 # import PyQt5 packages
-from PyQt5.QtWidgets import QMessageBox, QApplication, QFileDialog, QDesktopWidget, QFrame
+from PyQt5.QtWidgets import QMessageBox, QApplication, QFileDialog
 from PyQt5.uic import loadUiType, loadUi
 from PyQt5.QtCore import QRegExp, pyqtSignal, QStandardPaths
 from PyQt5.QtGui import QRegExpValidator, QPixmap
@@ -22,14 +22,14 @@ import matplotlib.pyplot as plt
 from ccSpectrometer import CCSpecWidget
 from ccT2Relaxometer import CCRelaxT2Widget
 from ccT1Relaxometer import CCRelaxT1Widget
-from protocol import ProtocolWidget, CCProtocolWidget
+from protocol import ProtocolWidget
 from cc2DImaging import CC2DImagWidget
 
 from parameters import params
-from dataHandler import data
+from manager.acquisitionmanager import AcquisitionManager as AcqMngr
 from dataLogger import logger
 
-from server import communicationhandler as com
+from server.communicationmanager import Com
 
 plt.rc('axes', prop_cycle=params.cycler)
 plt.rcParams['lines.linewidth'] = 1
@@ -60,10 +60,10 @@ class MainWindow(Main_Window_Base, Main_Window_Form):
         #self.data = data()
 
         # Establish connection
-        self.establish_conn()
+        #self.establish_conn()
 
         ## Skip connection to server for development
-        #params.ip = 0; self.start_com()
+        params.ip = 0; self.start_com()
 
 #_______________________________________________________________________________
 #   Establish connection to server and start communication
@@ -96,7 +96,7 @@ class MainWindow(Main_Window_Base, Main_Window_Form):
         except: print("Could not disconnect update gui signal.")
         try: self.environment.update_params
         except: print("Could not update params.")
-        try: self.environment.data.readout_finished.disconnect
+        try: AcqMngr.readoutFinished.disconnect#self.environment.data.readout_finished.disconnect
         except: print("Could not disconnect finished readout signal.")
 
         params.saveFile()
@@ -263,7 +263,6 @@ class ConnectionDialog(Conn_Dialog_Base, Conn_Dialog_Form):
         self.ui.closeEvent = self.closeEvent
         self.conn_help = QPixmap('ui/connection_help.png')
         self.help.setVisible(False)
-        self.data = data()
 
         # connect interface signals
         self.conn_btn.clicked.connect(self.connect_event)
@@ -284,14 +283,17 @@ class ConnectionDialog(Conn_Dialog_Base, Conn_Dialog_Form):
         print(params.ip)
         params.saveFile()
 
-        connection = com.connectClient(params.ip) #self.data.conn_client(params.ip)
+        connection = Com.connectClient(params.ip) #self.data.conn_client(params.ip)
 
         if connection:
             self.status_label.setText('Connected.')
             self.connected.emit()
-            self.data.set_at(params.at)
-            self.data.set_freq(params.freq)
-            self.data.set_gradients(params.grad[0], params.grad[1], params.grad[2], params.grad[3])
+            #self.data.set_at(params.at)
+            #self.data.set_freq(params.freq)
+            #self.data.set_gradients(params.grad[0], params.grad[1], params.grad[2], params.grad[3])
+            Com.setFrequency(params.freq)
+            Com.setAttenuation(params.at)
+            Com.setGradients(params.grad[0], params.grad[1], params.grad[2], params.grad[3])
             self.mainwindow.show()
             self.close()
 
@@ -341,7 +343,7 @@ def run():
     gui = MainWindow()
 
     ## Skip connection to server for development
-    #gui.show()
+    gui.show()
 
     sys.exit(app.exec_())
 
