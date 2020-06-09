@@ -4,5 +4,9 @@
         "manager/acquisitionmanager.py",
         "manager/datamanager.py",
         "manager/sequencemanager.py",
-        "view.qml"]
+        "view/view.qml",
+        "view/Globals.qml",
+        "view/SignalPlotView.qml",
+        "view/ImagePlotView.qml",
+        "view/SettingsView.qml"]
 }
