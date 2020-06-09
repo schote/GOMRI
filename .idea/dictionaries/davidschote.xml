@@ -8,6 +8,9 @@
       <w>bytearr</w>
       <w>communicationhandler</w>
       <w>controlcenter</w>
+      <w>csvdata</w>
+      <w>csvfile</w>
+      <w>csvread</w>
       <w>datafrane</w>
       <w>datahandler</w>
       <w>dataobject</w>
@@ -15,6 +18,7 @@
       <w>datapoints</w>
       <w>dataset</w>
       <w>datasize</w>
+      <w>exampledata</w>
       <w>flipangle</w>
       <w>freqaxis</w>
       <w>freqsweep</w>
@@ -28,6 +32,7 @@
       <w>mngr</w>
       <w>peakparameters</w>
       <w>plotview</w>
+      <w>pltax</w>
       <w>rangeselector</w>
       <w>relaxometer</w>
       <w>rlxs</w>
@@ -36,6 +41,7 @@
       <w>schote</w>
       <w>sqnc</w>
       <w>sqncs</w>
+      <w>tabview</w>
       <w>windowfactor</w>
     </words>
   </dictionary>

@@ -23,7 +23,7 @@ Communication Manager
 """
 
 from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
-from globalvars import grads
+from globalvars import grads, pax
 from parameters import params
 import numpy as np
 import struct
@@ -177,8 +177,10 @@ class CommunicationManager():
         @param p_axis:    Axis of projection (property)
         @return:        None
         """
-        # TODO: Check whether axis is defined globally or not
-        tcp.write(struct.pack('<I', 7 << 28 | p_axis))
+        if p_axis is not pax.x or pax.y or pax.z:
+            return
+        else:
+            tcp.write(struct.pack('<I', 7 << 28 | p_axis))
 
     @staticmethod
     def acquireImage(p_npe: int = 64, p_tr: int = 4000) -> None:

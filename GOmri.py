@@ -60,10 +60,10 @@ class MainWindow(Main_Window_Base, Main_Window_Form):
         #self.data = data()
 
         # Establish connection
-        self.establish_conn()
+        #self.establish_conn()
 
         ## Skip connection to server for development
-        #params.ip = 0; self.start_com()
+        params.ip = 0; self.start_com()
 
 #_______________________________________________________________________________
 #   Establish connection to server and start communication
@@ -343,7 +343,7 @@ def run():
     gui = MainWindow()
 
     ## Skip connection to server for development
-    #gui.show()
+    gui.show()
 
     sys.exit(app.exec_())
 

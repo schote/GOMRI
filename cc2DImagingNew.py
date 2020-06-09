@@ -1,32 +1,35 @@
-################################################################################
-#
-#   Author:     David Schote (david.schote@ovgu.de)
-#   Date:       01/22/2020
-#
-#   2D Imaging Sub Application
-#   Control center to perform spectrometry, projections and 2D Imaging
-#
-################################################################################
+"""
+2D Imaging Controller
 
-# import general packages
-import time
+@author:    David Schote
+@contact:   david.schote@ovgu.de
+@version:   2.0
+@change:    26/05/2020
 
-# import PyQt5 packages
-from PyQt5.QtWidgets import QTabWidget
-from PyQt5.uic import loadUiType
-from PyQt5.QtCore import pyqtSignal
+@summary:   Class of the imaging sub application.
 
-# import calculation and plot packages
-import numpy as np
-import pandas as pd
-import matplotlib
-matplotlib.use('Qt5Agg')
+@status:    Under development/testing
+@todo:      Implementation of params alternative (QSettings)
+
+"""
+
 from matplotlib.gridspec import GridSpec
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-
+from PyQt5.QtWidgets import QTabWidget
+from PyQt5.uic import loadUiType
+from PyQt5.QtCore import pyqtSignal
 from parameters import params
-#from manager.datamanager import data
+from manager.acquisitionmanager import AcquisitionManager
+from manager.datamanager import DataManager
+from server.communicationmanager import Com
+from manager.sequencemanager import SqncMngr
+from globalvars import sqncs, grads, pax
+import numpy as np
+import pandas as pd
+import matplotlib
+import time
+matplotlib.use('Qt5Agg')
 
 CC_2DImag_Form, CC_2DImag_Base = loadUiType('ui/cc2DImag.ui')
 
@@ -35,53 +38,38 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
     pe_finished = pyqtSignal()
     call_update = pyqtSignal()
     acq_completed = pyqtSignal()
-
-#_______________________________________________________________________________
-#   Init Functions
+    ts = 4
+    acquiredData: DataManager
 
     def __init__(self):
         super(CC2DImagWidget, self).__init__()
-        self.setupUi(self)
 
-        self.data = data()
-        self.load_params()
-        self.init_seqSelector()
-
-        self.ts = 4
-
-        #self.fig = Figure(); self.fig_canvas = FigureCanvas(self.fig)
-        #self.fig.set_facecolor("None")
-
-        #self.mdi = QMdiArea()
         self.tabview = QTabWidget()
-        self.tabview.setMovable(True)
-        self.tabview.setTabShape(QTabWidget.Rounded)
-        self.tabview.setTabPosition(QTabWidget.North)
+        self.load_params()
+        self.initUI()
 
         self.acq_completed.connect(self.show_Tabs)
 
-        # Connect Frequency input
-        self.freq_input.setKeyboardTracking(False)
-        self.freq_input.valueChanged.connect(self.data.set_freq)
-        self.centerFreq_btn.clicked.connect(self.autocenterFreq)
+        self.acqmngr = AcquisitionManager()
 
-        # Shim tool
-        self.setOffset_btn.clicked.connect(self.set_grad_offsets)
-
-        # Connect start manager button
+    def initUI(self):
+        # Sequence selector
+        self.uploadSeq_btn.setVisible(False)
+        self.uploadSeq_confirm.setVisible(False)
+        self.seq_selector.addItems(['Spin Echo'])
+        # Init tab view
+        self.tabview.setMovable(True)
+        self.tabview.setTabShape(QTabWidget.Rounded)
+        self.tabview.setTabPosition(QTabWidget.North)
+        # Connect trigger (acquisition and gradient offsets)
         self.spectrum_btn.clicked.connect(self.startSpectrum)
         self.startImag_btn.clicked.connect(self.startImaging)
         self.startProj_btn.clicked.connect(self.startProjections)
-
-    def init_seqSelector(self):
-        # Disable custom sequence upload
-        self.uploadSeq_btn.setVisible(False)
-        self.uploadSeq_confirm.setVisible(False)
-
-        #self.seq_selector.currentIndexChanged.connect(self.set_sequence)
-
-        self.seq_selector.addItems(['Spin Echo'])
-        #self.seq_selector.setCurrentIndex(0)
+        self.setOffset_btn.clicked.connect(self.set_grad_offsets)
+        # Connect user input
+        self.freq_input.setKeyboardTracking(False)
+        self.freq_input.valueChanged.connect(Com.setFrequency)
+        self.centerFreq_btn.clicked.connect(self.autocenterFreq)
 
     def init_spectrum(self):
 
@@ -95,8 +83,8 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.tabview.addTab(self.fig_canvas, "Spectrum")
 
         gs = GridSpec(2, 1, figure=self.fig)
-        self.freq_ax = self.fig.add_subplot(gs[0,0])
-        self.time_ax = self.fig.add_subplot(gs[1,0])
+        self.freq_ax = self.fig.add_subplot(gs[0, 0])
+        self.time_ax = self.fig.add_subplot(gs[1, 0])
         self.fig_canvas.draw()
 
         # connect readout finished signal
@@ -221,17 +209,19 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
 #_______________________________________________________________________________
 #   Control Functions for Spectrum, Projection or Image Acquisition
 
-    def autocenterFreq(self):
-        if self.data.center_freq != 'nan':
-            self.freq_input.setValue(round(self.data.center_freq,5))
-            self.data.set_freq(self.data.center_freq)
-            self.data.acquire
+    def setCenterFrequency(self) -> None:
+        """
+        Get and set real Larmor frequency, when data is available (requires previous acquisition)
+        @return:    None
+        """
+        if self.acquiredData.f_fftMagnitude.size is not 0:
+            [_, _, _, center] = self.acquiredData.get_peakparameters()
+            self.acquiredData = self.acqmngr.get_spectrum(center)
 
     def startSpectrum(self):
-        self.data.set_SE()
-        self.data.change_TE(10)
-        self.init_spectrum()
-        self.data.acquire
+        SqncMngr.setSpinEcho(self.te)
+        SqncMngr.packSequence(sqncs.SE)
+        self.acquiredData = self.acqmngr.get_spectrum(params.freq)
 
     def startImaging(self):
 
@@ -260,24 +250,35 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         '''
 
     def startProjections(self):
-
-        self.init_projections()
+        """
+        Trigger the acquisition of projections
+        @return:
+        """
         self.disable_ui()
-        #self.proj_ax = 0
+        self.imagProgress.setValue(0)
+        self.tabview.clear()
+        self.tabview.addTab(self.fig_canvas, "Projections")
 
-        print("self.proj_ax: {}".format(self.proj_ax))
+        fig = Figure()
+        fig_canvas = FigureCanvas(fig)
+        fig.set_facecolor("None")
+        gs = GridSpec(3, 1, figure=self.fig)
 
-        # performs all 3 projections
-        for idx in range(3):
-            #time.sleep(4)
-            #self.data.acquireProjection(idx)
-            print("AX:\t{}".format(self.proj_ax[idx]))
+        axes = {self.proj_x_select.isChecked(): pax.x,
+                self.proj_y_select.isChecked(): pax.y,
+                self.proj_z_select.isChecked(): pax.z
+                }
 
-            if self.proj_ax[idx] != 0:
-                time.sleep(4)
-                self.data.acquireProjection(idx)
+        for status, ax in axes:
+            pltax = fig.add_subplot(gs[ax, 0])
 
-            #print("Projection axis: ", ax)
+            if status is True:
+                [data, _, _] = AcquisitionManager.get_projection(ax, params.freq)
+                print("Projection axes:\t{}".format(ax))
+                time.sleep(2)
+                pltax.plot(data.f_axis, data.f_fftMagnitude)
+
+            fig_canvas.draw()
 
         self.enable_ui()
 

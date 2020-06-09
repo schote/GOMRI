@@ -6,20 +6,19 @@ Spectrometer Controlcenter
 @version:   2.0
 @change:    11/05/2020
 
-@summary:   Class the spectrometer sub application.
+@summary:   Class of the spectrometer sub application.
 
 @status:    Under development/testing
 @todo:      Connect plotview class, store UI through QSettings package, implementation of logger
 
 """
 
-# import general packages
-
 import csv
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.uic import loadUiType
 from PyQt5.QtCore import pyqtSignal, QStandardPaths
 import numpy as np
+import warnings
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
@@ -44,32 +43,30 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         super(CCSpecWidget, self).__init__()
         self.setupUi(self)
 
-        SqncMngr.sequenceUploaded.connect(self.sequence_uploaded)
+        #SqncMngr.sequenceUploaded.connect(self.sequence_uploaded)
 
         self.acqmngr = AcquisitionManager()
 
         SqncMngr.packSequence(sqncs.FID)
 
+        self.initUI()
+
         self.fig = Figure()
         self.fig.set_facecolor("None")
-        self.fig_canvas = FigureCanvas(self.fig)
         self.ax1 = self.fig.add_subplot(3, 1, 1)
         self.ax2 = self.fig.add_subplot(3, 1, 2)
         self.ax3 = self.fig.add_subplot(3, 1, 3)
+        self.fig_canvas = FigureCanvas(self.fig)
 
-        self.initUI()
-
-        self.toolBox.currentChanged.connect(self.switchPlot)
+        self.switchPlot(0)
+        self.setSequence(0)
 
     def initUI(self):
+
         self.load_params()
-        # Set default tool (manual manager) and call setup handler
-        self.toolBox.setCurrentIndex(0)
         # Sequence selector
         self.seq_selector.addItems(
             [sqncs.FID.str, sqncs.SE.str, sqncs.IR.str, sqncs.SIR.str, "Custom Sequence"])
-        self.seq_selector.currentIndexChanged.connect(self.setSequence)
-        self.seq_selector.setCurrentIndex(0)
         # Manual manager toolbox
         self.uploadSeq_btn.clicked.connect(self.uploadSequence)
         self.uploadSeq_confirm.setEnabled(False)
@@ -77,8 +74,8 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.manualAt_input.setKeyboardTracking(False)
         self.manualFreq_input.valueChanged.connect(Com.setFrequency)  # (self.data.set_freq)
         self.manualAt_input.valueChanged.connect(Com.setAttenuation)  # (self.data.set_at)
-        self.manualAcquire_btn.clicked.connect(self.start_manual)
-        self.manualCenter_btn.clicked.connect(self.manual_center)
+        self.manualAcquire_btn.clicked.connect(self.onAcquisitionStarted)
+        self.manualCenter_btn.clicked.connect(self.setCenterFrequency)
         self.manualAvg_input.setEnabled(False)
         self.manualAvg_enable.clicked.connect(self.manualAvg_input.setEnabled)
         self.manualTE_input.setKeyboardTracking(False)
@@ -89,31 +86,28 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.manualTI_input.setVisible(False)
         self.manualTILabel.setVisible(False)
         # Autocenter tool
-        self.autoCenter_btn.clicked.connect(self.init_autocenter)
+        self.autoCenter_btn.clicked.connect(self.onAcquisitionStarted)
         self.autoCenter_save_btn.clicked.connect(self.save_autocenter)
         self.autoCenter_save_btn.setEnabled(False)
         # Flipangle tool
-        self.flipangle_btn.clicked.connect(self.init_flipangle)
+        self.flipangle_btn.clicked.connect(self.onAcquisitionStarted)
         self.flipangle_save_btn.clicked.connect(self.save_flipangle)
         self.flipangle_save_btn.setEnabled(False)
         # Shim tool
         self.setOffset_btn.clicked.connect(self.setGradientOffsets)
-        # Output parameters
-        self.freq_output.setReadOnly(True)
-        self.at_output.setReadOnly(True)
-        self.center_output.setReadOnly(True)
-        self.peak_output.setReadOnly(True)
-        self.fwhm_output.setReadOnly(True)
-        self.snr_output.setReadOnly(True)
 
-        self.call_update.emit()
+        self.toolBox.setCurrentIndex(0)
+        self.seq_selector.setCurrentIndex(0)
+        self.toolBox.currentChanged.connect(self.switchPlot)
+        self.seq_selector.currentIndexChanged.connect(self.setSequence)
 
     # _______________________________________________________________________________
     #   Control Toolbox: Switch views depending on toolbox
 
-    def switchPlot(self):
-        idx = self.toolBox.currentIndex()
+    def switchPlot(self, idx):
         self.fig.clear()
+
+        print("Current Index: {}".format(idx))
 
         if idx is 0:
             self.ax1 = self.fig.add_subplot(2, 1, 1)
@@ -198,6 +192,26 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         # self.data.set_gradients(params.grad[0], params.grad[1], params.grad[2], params.grad[3])
         # self.data.acquire
 
+    def onAcquisitionStarted(self) -> None:
+
+        idx = self.toolBox.currentIndex()
+
+        if idx is 0:    # Spectrum
+            if self.manualAvg_enable is True:
+                fValues = [params.freq] * self.manualAvg_input
+                self.measureSpectrum(list(fValues), 10)
+            else:
+                self.measureSpectrum([params.freq], 10)
+        elif idx is 1:  # Calibration
+            self.findLarmorFrequency(params.freq)
+        elif idx is 2:  # Transmit Adjust
+            atValues = np.linspace(self.atStart_input, self.atEnd_input, self.atSteps_input, endpoint=True)
+            self.transmitAdjust(params.freq, atValues)
+        elif idx is 3:  # Gradient currents
+            self.setGradientOffsets()
+        else:
+            print("Error: Toolbox index out of scope.")
+
     def measureSpectrum(self, frequency: list, sampletime: int = 10) -> None:
         """
         Measure spectrum for a list of frequencies
@@ -209,11 +223,15 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.ax3.clear()
 
         for fValue in frequency:
-            [data, _] = self.acqmngr.get_spectrum(fValue, sampletime)
+            #   [data, _] = self.acqmngr.get_spectrum(fValue, sampletime)
+            data = self.acqmngr.get_exampleFidData()    # reads an example dataset
 
-            [fPeakValue, _, fCenter] = data.get_peakparameters()
-            self.set_output(fValue, params.at, fCenter, fPeakValue, 0, 0)
-            self.twoAxPlot(data)
+            [_, tPeak, _, fCenter] = data.get_peakparameters()
+            snr = data.get_snr()
+            [_, fwhmHZ, fwhmPPM] = data.get_fwhm(10)
+
+            self.set_output(fValue, params.at, fCenter, tPeak, [fwhmHZ, fwhmPPM], snr)
+            self.twoAxPlot(data, [-30000, 30000])
 
         self.enable_controls()
         self.acquiredData = data
@@ -254,15 +272,28 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         @return:    None
         """
         if self.acquiredData.f_fftMagnitude.size is not 0:
-            [_, _, _, center] = self.acquiredData.get_peakparameters(params.freq)
+            [_, _, _, center] = self.acquiredData.get_peakparameters()
             self.acquiredData = self.acqmngr.get_spectrum(center)
 
-    def set_output(self, freq, at, center, peak, fwhm, snr):  # Setting all outputs
+    def set_output(self, freq: float, at: float, center: float, peak: float, fwhm: list, snr: float) -> None:
+        """
+        Set output parameter text boxes
+        @param freq:        Acquisition frequency
+        @param at:          Attenuation of acquisition
+        @param center:      Real center frequency, corresponds to Larmor frequency
+        @param peak:        Signal maximum in time domain
+        @param fwhm:        Full width at half maximum
+        @param snr:         Signal-to-noise ratio
+        @return:            None
+        """
+
+        fwhmStr = "{} ({})".format(round(fwhm[0], 2), (fwhm[1], 4))
+
         self.freq_output.setText(str(round(freq, 5)))
         self.at_output.setText(str(round(at, 2)))
         self.center_output.setText(str(round(center, 5)))
         self.peak_output.setText(str(round(peak, 2)))
-        self.fwhm_output.setText(str(round(fwhm, 2)))
+        self.fwhm_output.setText(fwhmStr)
         self.snr_output.setText(str(round(snr, 2)))
 
     def update_params(self):
@@ -303,14 +334,14 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
     # _______________________________________________________________________________
     #   Plotting Data
 
-    def twoAxPlot(self, data: Data):
+    def twoAxPlot(self, data: Data, fRange: list):
+
+        idx0 = int(len(data.f_axis)/2)
+        idxMin = (np.abs(data.f_axis[0:idx0-5] - fRange[0])).argmin()
+        idxMax = (np.abs(data.f_axis[idx0+5:-1] - fRange[1])).argmin() + idx0
 
         self.ax1.clear()
-        self.ax1.plot(data.f_axis, data.f_fftMagnitude / max(data.f_fftMagnitude))
-        # self.ax1.plot(self.data.freqaxis[int(self.data.data_idx / 2 - self.data.data_idx / 10):int(
-        #   self.data.data_idx / 2 + self.data.data_idx / 10)],
-        #            fft_mag[int(self.data.data_idx / 2 - self.data.data_idx / 10):int(
-        #               self.data.data_idx / 2 + self.data.data_idx / 10)] / max(fft_mag))
+        self.ax1.plot(data.f_axis[idxMin:idxMax], data.f_fftMagnitude[idxMin:idxMax] / max(data.f_fftMagnitude))
         self.ax2.clear()
         self.ax2.plot(data.t_axis, data.t_magnitude, label='Magnitude')
         self.ax2.plot(data.t_axis, data.t_real, label='Real Part')
@@ -320,7 +351,7 @@ class CCSpecWidget(CC_Spec_Base, CC_Spec_Form):
         self.ax2.set_ylabel('RX signal [mV]')
         self.ax2.set_xlabel('time [ms]')
         self.ax2.legend()
-        self.fig_canvas.draw();
+        self.fig_canvas.draw()
 
         self.call_update.emit()
 

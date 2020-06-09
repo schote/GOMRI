@@ -14,8 +14,6 @@ class SqncObject:
     """
     Sequence object class
     """
-
-    # Definition of sequence object
     def __init__(self, name, path):
         self.str = name
         self.path = path
@@ -49,8 +47,17 @@ class Relaxations:
     T1 = 'T1'
     T2 = 'T2'
 
+class ProjectionAxes:
+    """
+    Definition of projection axes
+    """
+    x = 0
+    y = 1
+    z = 2
+
 
 # Instances
 sqncs = Sequences()
 grads = Gradients()
 rlxs = Relaxations()
+pax = ProjectionAxes()
