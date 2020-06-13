@@ -1,5 +1,5 @@
-import QtQuick 2.10
-import QtQuick.Controls 2.1
+import QtQuick 2.15
+import QtQuick.Controls 2.15
 import QtQuick.Window 2.2
 
 ApplicationWindow {
@@ -24,6 +24,14 @@ ApplicationWindow {
                 id: saveFigureButton
                 height: toolbar.height
                 text: qsTr("Save Figure")
+            }
+            ToolButton {
+                id: connectServer
+                height: toolbar.height
+                text: qsTr("Connect")
+                onClicked: {
+
+                }
             }
         }
     }
@@ -68,6 +76,10 @@ ApplicationWindow {
                 left: parent.left
                 right: parent.right
             }
+
+            exampleText: backend.printText()
+
+
         }
     }
 
@@ -75,6 +87,6 @@ ApplicationWindow {
 
 /*##^##
 Designer {
-    D{i:8;invisible:true}D{i:9;invisible:true}
+    D{i:0;formeditorZoom:0.5}D{i:8;invisible:true}D{i:9;invisible:true}
 }
 ##^##*/

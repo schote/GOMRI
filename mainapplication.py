@@ -1,27 +1,26 @@
 import sys
 import os
 
-from PySide2.QtCore import QObject, Signal, Property, QUrl
+from PySide2.QtCore import QObject, Signal, Property, QUrl, Slot
 from PySide2.QtGui import QGuiApplication
 from PySide2.QtQml import QQmlApplicationEngine
+
 
 class Backend(QObject):
     textChanged = Signal(str)
 
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
-        self.m_text = ""
+        self.data = "gomri"
 
-    @Property(str, notify=textChanged)
-    def text(self):
-        return self.m_text
+    @Property(str)
+    def getData(self):
+        return self.data
 
-    @text.setter
-    def setText(self, text):
-        if self.m_text == text:
-            return
-        self.m_text = text
-        self.textChanged.emit(self.m_text)
+    @Slot(result=str)
+    def printText(self):
+        print(self.data)
+        return self.data
 
 
 if __name__ == '__main__':
@@ -29,7 +28,6 @@ if __name__ == '__main__':
     app = QGuiApplication(sys.argv)
 
     backend = Backend()
-    backend.textChanged.connect(lambda text: print(text))
 
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("backend", backend)

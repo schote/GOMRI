@@ -8,5 +8,6 @@
         "view/Globals.qml",
         "view/SignalPlotView.qml",
         "view/ImagePlotView.qml",
-        "view/SettingsView.qml"]
+        "view/SettingsView.qml",
+        "view/ConnectionDialog.qml"]
 }
