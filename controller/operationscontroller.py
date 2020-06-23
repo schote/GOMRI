@@ -25,45 +25,52 @@ class OperationsList(QListWidget):
     """
     Operations List Class
     """
-
     def __init__(self, parent=None):
+        """
+        Initialization
+        @param parent:  Mainviewcontroller (access to parameter layout)
+        """
         super(OperationsList, self).__init__(parent)
 
         # Add operations to operations list
         self.addItems(list(operations.keys()))
-        self.itemClicked.connect(self.setParameters)
+        self.itemClicked.connect(self.set_parameters)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 
         # Make parent reachable from outside __init__
         self.parent = parent
 
-    def setParameters(self, op: dict):
+    def set_parameters(self, op: dict):
+        """
+        Set input parameters from operation object
+        @param op:  Operation object
+        @return:    None
+        """
         # Reset row layout for input parameters
         for i in reversed(range(self.parent.layout_parameters.count())):
             self.parent.layout_parameters.itemAt(i).widget().setParent(None)
 
         # Add input parameters to row layout
-        self.parent.layout_parameters.addWidget(self.getLabelItem("System Properties"))
-        properties = operations[op.text()].systemproperties
-        items = self.getItems(properties)
+        properties = operations[op.text()].properties
+        items = self.get_items(properties)
 
         for item in items:
             self.parent.layout_parameters.addWidget(item)
 
-    def getItems(self, struct: dict = None) -> list:
-        itemList: list = []
+    def get_items(self, struct: dict = None) -> list:
+        itemlist: list = []
         for key in list(struct.keys()):
             if type(struct[key]) == dict:
-                itemList.append(self.getLabelItem(key))
-                itemList += self.getItems(struct[key])
+                itemlist.append(self.get_labelitem(key))
+                itemlist += self.get_items(struct[key])
             else:
                 item = OperationParameter(key, struct[key])
-                itemList.append(item)
+                itemlist.append(item)
 
-        return itemList
+        return itemlist
 
     @staticmethod
-    def getLabelItem(text):
+    def get_labelitem(text):
         label = QLabel()
         label.setText(text)
         label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
@@ -83,10 +90,10 @@ class OperationParameter(Parameter_Base, Parameter_Form):
         self.label_name.setText(name)
         self.input_value.setText(str(value))
         # Connect text changed signal to getValue function
-        self.input_value.textChanged.connect(self.getValue)
+        self.input_value.textChanged.connect(self.get_value)
 
-    def getValue(self) -> None:
+    def get_value(self) -> None:
         print("{}: {}".format(self.label_name.text(), self.input_value.text()))
 
-    def setValue(self, value: int) -> None:
+    def set_value(self, value: int) -> None:
         self.input_value.setText(str(value))

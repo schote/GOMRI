@@ -14,7 +14,7 @@ Operation Modes
 """
 
 from warnings import warn
-from globalvars import sqncs, grads
+from globalvars import sqncs, nmspc, acqtypes
 
 
 class Spectrum:
@@ -22,7 +22,7 @@ class Spectrum:
     Spectrum Operation Class
     """
 
-    def __init__(self, frequency, attenuation, shim):
+    def __init__(self, frequency, attenuation, sampletime, shim):
         """
         Initialization of spectrum operation class
         @param frequency:       Frequency value for operation
@@ -34,28 +34,32 @@ class Spectrum:
             warn('Invalid number of shim values.')
             return
 
-        self.systemproperties = {
-            'Frequency': frequency,
-            'Attenuation': attenuation,
-            'Shim Values': {
-                "X Gradient": shim[0],
-                "Y Gradient": shim[1],
-                "Z Gradient": shim[2],
-                "Z² Gradient": shim[3]
+        self.properties = {
+            nmspc.systemproperties: {
+                nmspc.frequency: frequency,
+                nmspc.attenuation: attenuation,
+                nmspc.sampletime: sampletime
+                },
+            nmspc.shim: {
+                nmspc.x_grad: shim[0],
+                nmspc.y_grad: shim[1],
+                nmspc.z_grad: shim[2],
+                nmspc.z2_grad: shim[3]
                 }
         }
 
-        self.sequences = {
-            sqncs.FID.str: sqncs.FID.path,
-            sqncs.SE.str: sqncs.SE.path,
-            sqncs.IR.str: sqncs.IR.path,
-            sqncs.SIR.str: sqncs.SIR.path
+        self.acquisition = {
+            nmspc.type: acqtypes.spectrum,
+            nmspc.sequence: {
+                sqncs.FID.str: sqncs.FID.path
+            }
         }
 
 
 # Initialization of default operationslist
 operations = {
-    'Spectrum1': Spectrum(20.1, 10, [0, 0, 0, 0]),
-    'Spectrum2': Spectrum(13.1, 10, [0, 0, 0, 0]),
-    'Spectrum3': Spectrum(10, 10, [1,2,3,4])
+    # Example FID corresponds to "get_exampleFidData()" -- prototype data set
+    'Example FID Spectrum': Spectrum(20.0971, 10, 7.5, [0, 0, 0, 0]),
+    'Spectrum Test': Spectrum(11.25811, 10, 20, [0, 0, 0, 0]),
+    'Spectrum3': Spectrum(10, 10, 10, [1, 2, 3, 4])
 }

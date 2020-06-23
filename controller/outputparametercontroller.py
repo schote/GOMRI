@@ -30,7 +30,7 @@ class Output(QObject):
         # Make parent reachable from outside __init__
         self.parent = parent
 
-    def setParameters(self, values: dict):
+    def set_parameters(self, values: dict):
         # Reset grid layout for output parameter
         for i in reversed(range(self.parent.layout_outputgrid.count())):
             self.parent.layout_outputgrid.itemAt(i).widget().setParent(None)
@@ -46,7 +46,6 @@ class Output(QObject):
             row += 1
 
 
-
 class OutputParameter(Parameter_Base, Parameter_Form):
     """
     Output Parameter Widget-Class
@@ -59,11 +58,6 @@ class OutputParameter(Parameter_Base, Parameter_Form):
         # Set output parameter's label and value
         self.label_name.setText(name)
         self.output_value.setText(str(value))
-        # Connect text changed signal to getValue function
-        self.output_value.textChanged.connect(self.getValue)
 
-    def getValue(self) -> None:
-        print("{}: {}".format(self.label_name.text(), self.output_value.text()))
-
-    def setValue(self, value: int) -> None:
+    def set_value(self, value: int) -> None:
         self.output_value.setText(str(value))

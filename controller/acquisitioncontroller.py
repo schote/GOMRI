@@ -16,6 +16,8 @@ Acquisition Manager
 from PyQt5.QtCore import pyqtSlot
 from manager.acquisitionmanager import AcquisitionManager
 from plotview.exampleplot import ExamplePlot
+from operationmodes import operations
+from globalvars import nmspc
 from PyQt5.QtCore import QObject
 
 
@@ -28,8 +30,7 @@ class AcquisitionController(QObject):
 
         parent.action_acquire.triggered.connect(self.startAcquisition)
 
-        # TODO: Implementation of GPA controller widget
-
+    """
     @pyqtSlot()
     def startAcquisition(self):
 
@@ -46,13 +47,22 @@ class AcquisitionController(QObject):
             "Signal Maximum [V]": round(data.get_peakparameters()[3], 4)
         }
 
-        self.outputsection.setParameters(outputvalues)
+        self.outputsection.set_parameters(outputvalues)
 
         # TODO: Type dependent acquisition and plot routine
         self.parent.plotview_layout.addWidget(plot)
+    """
 
+    @pyqtSlot()
+    def startAcquisition(self):
 
+        self.parent.clear_plotlayout()
 
-
+        op = operations['Example FID Spectrum'].properties
+        # [output, plot] = AcquisitionManager().get_exampleFidData(op[nmspc.systemproperties])
+        [output, plot] = AcquisitionManager().get_spectrum(op[nmspc.systemproperties],
+                                                           op[nmspc.shim])
+        self.outputsection.set_parameters(output)
+        self.parent.plotview_layout.addWidget(plot)
 
     # TODO: Startup routine (set frequency, set attenuation, set shim, upload sequence, etc. )

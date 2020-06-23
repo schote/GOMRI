@@ -24,7 +24,6 @@ Communication Manager
 
 from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
 from globalvars import grads, pax
-from parameters import params
 import numpy as np
 import struct
 import time
@@ -103,7 +102,6 @@ class CommunicationManager():
         @param freq:    Frequency in MHz
         @return:        None
         """
-        params.freq = freq
         tcp.write(struct.pack('<I', 2 << 28 | int(1.0e6 * freq)))
         print("Set frequency!")
 
@@ -115,7 +113,6 @@ class CommunicationManager():
         @param at:      Attenuation in dB
         @return:        None
         """
-        params.at = at
         tcp.write(struct.pack('<I', 3 << 28 | int(abs(at) / 0.25)))
         print("Set attenuation!")
 

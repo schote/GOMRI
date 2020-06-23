@@ -16,7 +16,6 @@ from PyQt5.QtCore import QObject, pyqtSignal
 from assembler import Assembler
 from server.communicationmanager import CommunicationManager as Com
 from globalvars import sqncs, SqncObject
-from parameters import params
 
 
 class SequenceManager(QObject):
@@ -62,7 +61,6 @@ class SequenceManager(QObject):
         @param te:  Echo time in ms
         @return:    None
         """
-        params.te = te
         # Open sequence and read lines
         f = open(sqncs.SE.path, 'r+')
         lines = f.readlines()
@@ -85,7 +83,6 @@ class SequenceManager(QObject):
         @param ti:  Time of inversion in ms
         @return:    None
         """
-        params.ti = ti
         f = open(sqncs.IR.path, 'r+')  # Open sequence and read lines
         lines = f.readlines()
         # Modify TI time in the 8th last line
@@ -103,7 +100,6 @@ class SequenceManager(QObject):
         @param ti:  Time of inversion in ms
         @return:    None
         """
-        params.ti = ti
         f = open(sqncs.SIR.path, 'r+')  # Open sequence and read lines
         lines = f.readlines()
         # Modify TI time in the 8th last line

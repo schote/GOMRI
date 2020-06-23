@@ -13,13 +13,15 @@ Acquisition Manager
 
 """
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from server.communicationmanager import CommunicationManager as Com
+from manager.sequencemanager import SqncMngr
 from manager.datamanager import DataManager as Data
-from parameters import params
+from globalvars import grads, nmspc, sqncs
 import numpy as np
 import time
 import csv
+from plotview.exampleplot import ExamplePlot
 
 class AcquisitionManager:
     """
@@ -35,41 +37,78 @@ class AcquisitionManager:
         super(AcquisitionManager, self).__init__()
         self._samples: int = p_samples
 
+        # TODO: Set sequence here (once!)
+
     @staticmethod
-    def get_exampleFidData() -> Data:
-        frequency = 20.0971
-        ts = 7.5
+    def get_exampleFidData(properties) -> [dict, ExamplePlot]:
+        """
+        Get prototype data set (FID spectrum) with f = 20.0971, at = 10, ts = 7.5
+        @param properties:  Operation properties object
+        @return:            Dict with output parameters, plot object
+        """
         with open('exampledata.csv', 'r') as _csvfile:
             _csvread = csv.reader(_csvfile, delimiter='\n')
             _csvdata = list(_csvread)
 
         cpxData = [complex(_row[0]) for _row in _csvdata]
 
-        dataobject = Data(cpxData, frequency, ts)
-        return dataobject
+        dataobject = Data(cpxData,
+                          properties[nmspc.frequency],
+                          properties[nmspc.sampletime])
 
-    def get_spectrum(self, p_frequency: float, p_ts: int = 20) -> [Data, float]:
+        outputvalues = {
+            "SNR": round(dataobject.get_snr(), 4),
+            "FWHM [Hz]": round(dataobject.get_fwhm()[1], 4),
+            "FWHM [ppm]": round(dataobject.get_fwhm()[2], 4),
+            "Center Frequency [MHz]": round(dataobject.get_peakparameters()[1], 4),
+            "Signal Maximum [V]": round(dataobject.get_peakparameters()[3], 4),
+            "Acquisition Time [s]": round(properties[nmspc.sampletime], 4),
+            "Attenuation": round(properties[nmspc.attenuation], 4)
+        }
+
+        plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+
+        return [outputvalues, plot]
+
+    def get_spectrum(self, properties, shim) -> [dict, ExamplePlot]:
         """
         Get the spectrum data of the sample volume
-        @param p_frequency:     Acquisition frequency (parameter)
-        @param p_ts:            Sample time in ms (parameter)
-        @param p_frequency:     Excitation frequency in MHz (parameter)
-        @return:                Data-object (processed), acquisition time
+        @param properties:  Operation properties object
+        @param shim:        Operation shim object
+        @return:            Dict with output parameters, plot object
         """
-        if p_frequency is not params.freq:
-            Com.setFrequency(p_frequency)
-        
         t0: float = time.time()
+        self.set_systemproperties(properties[nmspc.frequency],
+                                  properties[nmspc.attenuation],
+                                  shim)
+        SqncMngr.packSequence(sqncs.FID)
         Com.acquireSpectrum()
         Com.waitForTransmission()
-
         tmp_data: np.complex64 = Com.readData(self._samples)
 
         t1: float = time.time()
         acquisitiontime: float = (t1-t0)/60
-        dataobject: Data = Data(tmp_data, p_frequency, p_ts)
 
-        return [dataobject, acquisitiontime]
+        freq_range = 50000
+        dataobject: Data = Data(tmp_data,
+                                properties[nmspc.frequency],
+                                properties[nmspc.sampletime],
+                                freq_range)
+
+        plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+
+        outputvalues = {
+            "SNR": round(dataobject.get_snr(), 4),
+            "FWHM [Hz]": round(dataobject.get_fwhm()[1], 4),
+            "FWHM [ppm]": round(dataobject.get_fwhm()[2], 4),
+            "Center Frequency [MHz]": round(dataobject.get_peakparameters()[1], 4),
+            "Signal Maximum [V]": round(dataobject.get_peakparameters()[3], 4),
+            "Acquisition Time [s]": round(acquisitiontime, 4),
+            "Sample Time [ms]": round(properties[nmspc.sampletime], 4),
+            "Attenuation": round(properties[nmspc.attenuation], 4)
+        }
+
+        return [outputvalues, plot]
 
     def get_kspace(self, p_frequency: float, p_npe: int = 16, p_tr: int = 4000) -> [np.complex, float]:
         """
@@ -117,3 +156,22 @@ class AcquisitionManager:
         # TODO: Return datahandler object for projection
 
         return [tmp_data, acquisitiontime, p_axis]
+
+    @staticmethod
+    def set_systemproperties(p_frequency: float, p_attenuation: float, p_gradients: list) -> None:
+        """
+        Setup system parameters
+        @param p_frequency:     TX frequency
+        @param p_attenuation:   TX Attenuation
+        @param p_gradients:     Gradient offset values
+        @return:                None
+        """
+        Com.setFrequency(p_frequency)
+        Com.waitForTransmission()
+        Com.setAttenuation(p_attenuation)
+        Com.waitForTransmission()
+        Com.setGradients(p_gradients[nmspc.x_grad],
+                         p_gradients[nmspc.y_grad],
+                         p_gradients[nmspc.z_grad])
+        Com.waitForTransmission()
+

@@ -16,7 +16,6 @@ Data Manager
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from datetime import datetime
-from parameters import params
 from dataclasses import dataclass
 import numpy as np
 
@@ -57,7 +56,7 @@ class DataManager(QObject):
         self.p_ts = p_ts
         self.idx_samplepoints = int(p_ts * 250)
 
-        d_cropped = self.data[0:self.idx_samplepoints]  # * 2000.0
+        d_cropped = self.data[0:self.idx_samplepoints] * 2000.0
         self._t_axis = np.linspace(0, self.p_ts, self.idx_samplepoints)
         self._t_magnitude = np.abs(d_cropped)
         self._t_magnitudeCon = np.convolve(self.t_magnitude, np.ones((50,)) / 50, mode='same')
@@ -67,10 +66,10 @@ class DataManager(QObject):
 
         self._frequency = p_frequency
         self._f_axis = np.linspace(-self.f_range / 2, self.f_range / 2, self.idx_samplepoints)
-        self._f_fftData = np.fft.fftshift(np.fft.fft(np.fft.fftshift(d_cropped), n=self.idx_samplepoints, norm='ortho'))
+        self._f_fftData = np.fft.fftshift(np.fft.fft(np.fft.fftshift(d_cropped), n=self.idx_samplepoints))
         self._f_fftMagnitude = abs(self.f_fftData)
 
-        params.dataTimestamp = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
+        # params.dataTimestamp = datetime.now().strftime('%m/%d/%Y, %H:%M:%S')
 
     @property
     def t_axis(self):
@@ -115,6 +114,9 @@ class DataManager(QObject):
         @param f_fwhmWindow:    Frequency window
         @return:                FWHM in datapoint indices, hertz and ppm
         """
+        if not self.is_evaluateable():
+            return [0, float("nan"), float("nan")]
+
         [_peakValue, _, _peakIdx, _peakFreq] = self.get_peakparameters()
         fft = self.f_fftMagnitude[int(_peakIdx - f_fwhmWindow / 2):int(_peakIdx + f_fwhmWindow / 2)]
         candidates: np.ndarray = np.abs([x - _peakValue / 2 for x in fft])
@@ -126,13 +128,16 @@ class DataManager(QObject):
 
         return [_fwhm, _fwhm_hz, _fwhm_ppm]
 
-    def get_snr(self, f_windowfactor: float = 10, n: int = 50) -> float:
+    def get_snr(self, f_windowfactor: float = 10) -> float:
         """
         Get signal to noise ratio
         @param f_windowfactor:  Factor for fwhm to define peak window
         @param n:               N datapoints for moving average
         @return:                SNR
         """
+        if not self.is_evaluateable():
+            return float("nan")
+
         [_fwhm, _, _] = self.get_fwhm()
         [_signalValue, _, _signalIdx, _] = self.get_peakparameters()
         _peakWin = int(_fwhm * f_windowfactor)
@@ -152,6 +157,9 @@ class DataManager(QObject):
         Get peak parameters
         @return:            Frequency peak, time domain peak, index of frequency peak and frequency of peak
         """
+        if not self.is_evaluateable():
+            return [float("nan"), float("nan"), 0, float("nan")]
+
         t_signalValue: float = round(np.max(self._t_magnitudeCon), 4)
         f_signalValue: float = round(np.max(self._f_fftMagnitude), 4)
         f_signalIdx: int = np.argmax(self._f_fftMagnitude)  # [0]
@@ -168,3 +176,16 @@ class DataManager(QObject):
         """
         index: np.ndarray = np.argmin(self._t_realCon[0:50])
         return np.sign(self._t_realCon[index])
+
+    def is_evaluateable(self) -> bool:
+        """
+        Check if acquired data is evaluateable
+        @return:    Evaluateable (true/false)
+        """
+        minValue = min(self._f_fftMagnitude)
+        maxValue = max(self._f_fftMagnitude)
+        difference = maxValue-minValue
+        if difference > 1:
+            return True
+        else:
+            return False

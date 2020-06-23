@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 .DS_Store
 .pyproject.user
+.pyproject.user

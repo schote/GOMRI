@@ -69,7 +69,7 @@
          </property>
          <property name="minimumSize">
           <size>
-           <width>200</width>
+           <width>300</width>
            <height>0</height>
           </size>
          </property>
@@ -368,9 +368,7 @@
     <string>Connect to server</string>
    </property>
    <property name="font">
-    <font>
-     <pointsize>11</pointsize>
-    </font>
+    <font/>
    </property>
   </action>
   <action name="action_acquire">

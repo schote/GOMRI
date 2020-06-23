@@ -49,13 +49,13 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
             '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.)'
             '{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$')
         self.ip_box.setValidator(QRegExpValidator(IPvalidator, self))
-        self.ip_box.addItem('192.168.72.43')
+        self.ip_box.addItem('10.42.0.124')
         # for item in params.hosts: self.ip_box.addItem(item)
 
     def connect_event(self):
         ip = self.ip_box.currentText()
-        #connection = Com.connectClient(ip)
-        connection = True
+        connection = Com.connectClient(ip)
+        # connection = True
         if connection:
             self.status_label.setText('Connected')
 
