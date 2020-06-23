@@ -31,9 +31,6 @@ class Sequences:
 
 
 class Gradients:
-    """
-    Definition of gradients
-    """
     X = 0
     Y = 1
     Z = 2
@@ -41,19 +38,19 @@ class Gradients:
 
 
 class Relaxations:
-    """
-    Definition of relaxation times
-    """
     T1 = 'T1'
     T2 = 'T2'
 
+
 class ProjectionAxes:
-    """
-    Definition of projection axes
-    """
     x = 0
     y = 1
     z = 2
+
+
+class StyleSheets:
+    breezeDark = "view/stylesheets/breeze-dark.qss"
+    breezeLight = "view/stylesheets/breeze-light.qss"
 
 
 # Instances

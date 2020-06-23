@@ -1,14 +1,30 @@
-################################################################################
-#
-#   Author:     David Schote (david.schote@ovgu.de)
-#   Date:       11/27/2019
-#
-#   Main Application:
-#   Setup communication to server and
-#   setup of the main window with tabs to the sub applications
-#
-################################################################################
+"""
+Startup Code
 
+@author:    David Schote
+@contact:   david.schote@ovgu.de
+@version:   2.0 (Beta)
+@change:    13/06/2020
+
+@summary:   TBD
+
+@status:    Under development
+@todo:
+
+"""
+import sys
+from PyQt5.QtWidgets import QApplication
+from controller.mainviewcontroller import MainViewController
+
+if __name__ == '__main__':
+
+    app = QApplication(sys.argv)
+    gui = MainViewController()
+    gui.show()
+
+    sys.exit(app.exec_())
+
+"""
 import sys
 import csv
 
@@ -256,7 +272,7 @@ class ConnectionDialog(Conn_Dialog_Base, Conn_Dialog_Form):
 
     def __init__(self, parent=None):
         super(ConnectionDialog, self).__init__(parent)
-        self.setupUi(self)
+        
 
         # setup closeEvent
         self.ui = loadUi('ui/connDialog.ui')
@@ -352,3 +368,4 @@ def run():
 
 if __name__ == '__main__':
     run()
+"""

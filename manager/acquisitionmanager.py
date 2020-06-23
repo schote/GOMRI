@@ -6,7 +6,7 @@ Acquisition Manager
 @version:   1.0
 @change:    02/05/2020
 
-@summary:   Class for managing the acquisition of spectrum, projection or image.
+@summary:   Class for managing the data acquisition
 
 @status:    Under testing
 @todo:      Generalize image acquisition manager
@@ -21,7 +21,7 @@ import numpy as np
 import time
 import csv
 
-class AcquisitionManager(QObject):
+class AcquisitionManager:
     """
     Acquisition manager class
     """

@@ -57,8 +57,6 @@ class CommunicationManager():
             print("TCP socket in state : ", tcp.state())
             return [False, tcp.state()]
 
-    ##  Documentation of a method.
-    #   Disconnects server and client
     @staticmethod
     def disconnectClient() -> None:
         """
@@ -81,8 +79,6 @@ class CommunicationManager():
             if not tcp.waitForBytesWritten():
                 break
 
-    ##  Documentation of a method.
-    #   @param byte_arr_sequence    Sequence as byte array
     @staticmethod
     def setSequence(bytearr_sequence: bytearray) -> bool:
         """
@@ -211,6 +207,5 @@ class CommunicationManager():
                 return np.frombuffer(buffer)
             else:
                 continue
-
 
 Com = CommunicationManager()

@@ -1,0 +1,22 @@
+{
+    "files": ["GOmri.py",
+        "operationmodes.py",
+        "globalvars.py",
+        "manager/datamanager.py",
+        "manager/relaxometermanager.py",
+        "manager/sequencemanager.py",
+        "manager/acquisitionmanager.py",
+        "server/communicationmanager.py",
+        "controller/connectiondialog.py",
+        "controller/acquisitioncontroller.py",
+        "controller/operationscontroller.py",
+        "controller/outputparametercontroller.py",
+        "controller/mainviewcontroller.py",
+        "view/mainview.ui",
+        "view/operationslist.ui",
+        "view/inputparameter.ui",
+        "view/outputparameter.ui",
+        "view/connectiondialog.ui",
+        "plotview/exampleplot.py"
+        ]
+}
