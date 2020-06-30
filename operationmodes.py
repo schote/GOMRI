@@ -14,7 +14,9 @@ Operation Modes
 """
 
 from warnings import warn
-from globalvars import sqncs, nmspc, acqtypes
+from globalvars import sqncs
+from operationsnamespace import Namespace as nmspc
+from operationsnamespace import AcquisitionTypes as acqtypes
 
 
 class Spectrum:

@@ -81,7 +81,7 @@ class OperationParameter(Parameter_Base, Parameter_Form):
     """
     Operation Parameter Widget-Class
     """
-
+    # Get reference to position in operation object
     def __init__(self, name, value):
         super(OperationParameter, self).__init__()
         self.setupUi(self)
@@ -94,6 +94,7 @@ class OperationParameter(Parameter_Base, Parameter_Form):
 
     def get_value(self) -> None:
         print("{}: {}".format(self.label_name.text(), self.input_value.text()))
+        return self.input_value.text()
 
     def set_value(self, value: int) -> None:
         self.input_value.setText(str(value))
