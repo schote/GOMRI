@@ -17,7 +17,8 @@ from PyQt5.QtCore import pyqtSignal
 from server.communicationmanager import CommunicationManager as Com
 from manager.sequencemanager import SqncMngr
 from manager.datamanager import DataManager as Data
-from globalvars import grads, nmspc, sqncs
+from globalvars import grads, sqncs
+from operationsnamespace import Namespace as nmspc
 import numpy as np
 import time
 import csv
@@ -53,8 +54,8 @@ class AcquisitionManager:
         cpxData = [complex(_row[0]) for _row in _csvdata]
 
         dataobject = Data(cpxData,
-                          properties[nmspc.frequency],
-                          properties[nmspc.sampletime])
+                          properties[nmspc.frequency][0],
+                          properties[nmspc.sampletime][0])
 
         outputvalues = {
             "SNR": round(dataobject.get_snr(), 4),
@@ -62,8 +63,8 @@ class AcquisitionManager:
             "FWHM [ppm]": round(dataobject.get_fwhm()[2], 4),
             "Center Frequency [MHz]": round(dataobject.get_peakparameters()[1], 4),
             "Signal Maximum [V]": round(dataobject.get_peakparameters()[3], 4),
-            "Acquisition Time [s]": round(properties[nmspc.sampletime], 4),
-            "Attenuation": round(properties[nmspc.attenuation], 4)
+            "Acquisition Time [s]": round(properties[nmspc.sampletime][0], 4),
+            "Attenuation": round(properties[nmspc.attenuation][0], 4)
         }
 
         plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")

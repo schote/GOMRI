@@ -40,7 +40,7 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
 
         self.setupUi(self)
         self.ui = loadUi('view/mainview.ui')
-        self.set_stylesheet(style.breezeDark)
+        self.setupStylesheet(style.breezeDark)
 
         # Connection dialog
         self.action_connect.triggered.connect(self.show_connectiondialog)
@@ -72,7 +72,12 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         for i in reversed(range(self.plotview_layout.count())):
             self.plotview_layout.itemAt(i).widget().setParent(None)
 
-    def set_stylesheet(self, style) -> None:
+    def setupStylesheet(self, style) -> None:
+        """
+        Setup application stylesheet
+        @param style:
+        @return:
+        """
         file = QFile(style)
         file.open(QFile.ReadOnly | QFile.Text)
         stream = QTextStream(file)

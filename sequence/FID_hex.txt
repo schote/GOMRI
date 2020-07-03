@@ -46,31 +46,31 @@ A[0xe]	pulseq_memory[28] = 0x0
 A[0xf]	pulseq_memory[30] = 0x0 
 	pulseq_memory[31] = 0x0
 
-A[0x10]	pulseq_memory[32] = 0x46 
+A[0x10]	pulseq_memory[32] = 0x1 
 	pulseq_memory[33] = 0x10000002
 
-A[0x11]	pulseq_memory[34] = 0x49 
+A[0x11]	pulseq_memory[34] = 0x4 
 	pulseq_memory[35] = 0x10000003
 
-A[0x12]	pulseq_memory[36] = 0x4a 
+A[0x12]	pulseq_memory[36] = 0x5 
 	pulseq_memory[37] = 0x10000004
 
-A[0x13]	pulseq_memory[38] = 0x4b 
+A[0x13]	pulseq_memory[38] = 0x6 
 	pulseq_memory[39] = 0x10000005
 
-A[0x14]	pulseq_memory[40] = 0x4c 
+A[0x14]	pulseq_memory[40] = 0x7 
 	pulseq_memory[41] = 0x10000006
 
-A[0x15]	pulseq_memory[42] = 0x4d 
+A[0x15]	pulseq_memory[42] = 0x8 
 	pulseq_memory[43] = 0x10000007
 
-A[0x16]	pulseq_memory[44] = 0x4e 
+A[0x16]	pulseq_memory[44] = 0x9 
 	pulseq_memory[45] = 0x10000008
 
-A[0x17]	pulseq_memory[46] = 0x4f 
+A[0x17]	pulseq_memory[46] = 0xa 
 	pulseq_memory[47] = 0x10000009
 
-A[0x18]	pulseq_memory[48] = 0x50 
+A[0x18]	pulseq_memory[48] = 0xb 
 	pulseq_memory[49] = 0x1000000a
 
 A[0x19]	pulseq_memory[50] = 0x0 

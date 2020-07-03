@@ -56,7 +56,7 @@ class DataManager(QObject):
         self.p_ts = p_ts
         self.idx_samplepoints = int(p_ts * 250)
 
-        d_cropped = self.data[0:self.idx_samplepoints] * 2000.0
+        d_cropped = self.data[0:self.idx_samplepoints] # * 2000.0
         self._t_axis = np.linspace(0, self.p_ts, self.idx_samplepoints)
         self._t_magnitude = np.abs(d_cropped)
         self._t_magnitudeCon = np.convolve(self.t_magnitude, np.ones((50,)) / 50, mode='same')

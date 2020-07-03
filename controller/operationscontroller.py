@@ -15,7 +15,8 @@ Operations Controller
 
 from PyQt5.QtWidgets import QListWidget, QSizePolicy, QLabel
 from PyQt5.QtCore import Qt
-from operationmodes import operations
+from operationmodes import defaultoperations
+from operationsnamespace import Namespace as nmspc
 from PyQt5.uic import loadUiType
 
 Parameter_Form, Parameter_Base = loadUiType('view/inputparameter.ui')
@@ -33,35 +34,60 @@ class OperationsList(QListWidget):
         super(OperationsList, self).__init__(parent)
 
         # Add operations to operations list
-        self.addItems(list(operations.keys()))
-        self.itemClicked.connect(self.set_parameters)
+        self.addItems(list(defaultoperations.keys()))
+        self.itemClicked.connect(self.setParametersUI)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 
         # Make parent reachable from outside __init__
         self.parent = parent
 
-    def set_parameters(self, op: dict):
+    def setParametersUI(self, op: dict = None) -> None:
         """
         Set input parameters from operation object
         @param op:  Operation object
         @return:    None
         """
+        operation = op.text()
         # Reset row layout for input parameters
         for i in reversed(range(self.parent.layout_parameters.count())):
             self.parent.layout_parameters.itemAt(i).widget().setParent(None)
 
         # Add input parameters to row layout
-        properties = operations[op.text()].properties
-        items = self.get_items(properties)
+        inputwidgets: list = []
 
-        for item in items:
+        if hasattr(defaultoperations[operation], 'systemproperties'):
+            sys_prop = defaultoperations[operation].systemproperties
+            inputwidgets += [self.generateLabelItem(nmspc.systemproperties)]
+            inputwidgets += self.generateWidgetsFromDict(sys_prop, operation)
+
+        if hasattr(defaultoperations[operation], 'gradientshims'):
+            shims = defaultoperations[operation].gradientshims
+            inputwidgets += [(self.generateLabelItem(nmspc.shim))]
+            inputwidgets += (self.generateWidgetsFromDict(shims))
+
+        for item in inputwidgets:
             self.parent.layout_parameters.addWidget(item)
+
+    @staticmethod
+    def generateWidgetsFromDict(obj: dict = None, operation: str = None) -> list:
+        widgetlist: list = []
+        for key in obj:
+            widget = OperationParameter(key, obj[key], operation)
+            widgetlist.append(widget)
+        return widgetlist
+
+    @staticmethod
+    def generateLabelItem(text):
+        label = QLabel()
+        label.setText(text)
+        label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+        return label
 
     def get_items(self, struct: dict = None) -> list:
         itemlist: list = []
         for key in list(struct.keys()):
             if type(struct[key]) == dict:
-                itemlist.append(self.get_labelitem(key))
+                itemlist.append(self.generateLabelItem(key))
                 itemlist += self.get_items(struct[key])
             else:
                 item = OperationParameter(key, struct[key])
@@ -69,32 +95,28 @@ class OperationsList(QListWidget):
 
         return itemlist
 
-    @staticmethod
-    def get_labelitem(text):
-        label = QLabel()
-        label.setText(text)
-        label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-        return label
-
 
 class OperationParameter(Parameter_Base, Parameter_Form):
     """
     Operation Parameter Widget-Class
     """
     # Get reference to position in operation object
-    def __init__(self, name, value):
+    def __init__(self, name, parameter, operation):
         super(OperationParameter, self).__init__()
         self.setupUi(self)
 
         # Set input parameter's label and value
+        self.operation = operation
+        self.parameter = parameter
         self.label_name.setText(name)
-        self.input_value.setText(str(value))
+        self.input_value.setText(str(parameter[0]))
         # Connect text changed signal to getValue function
         self.input_value.textChanged.connect(self.get_value)
 
     def get_value(self) -> None:
         print("{}: {}".format(self.label_name.text(), self.input_value.text()))
-        return self.input_value.text()
+        value: float = float(self.input_value.text())
+        setattr(defaultoperations[self.operation], self.parameter[1], value)
 
     def set_value(self, value: int) -> None:
         self.input_value.setText(str(value))

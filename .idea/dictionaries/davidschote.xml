@@ -18,22 +18,28 @@
       <w>datapoints</w>
       <w>dataset</w>
       <w>datasize</w>
+      <w>defaultoperations</w>
       <w>exampledata</w>
       <w>flipangle</w>
       <w>freqaxis</w>
       <w>freqsweep</w>
       <w>fwhm</w>
+      <w>gradientshims</w>
+      <w>gradientwaveform</w>
       <w>hndlr</w>
       <w>imag</w>
+      <w>inputwidgets</w>
       <w>kspace</w>
       <w>larmor</w>
       <w>magnotude</w>
       <w>mainview</w>
       <w>minima</w>
       <w>mngr</w>
+      <w>objectlist</w>
       <w>peakparameters</w>
       <w>plotview</w>
       <w>pltax</w>
+      <w>pulsesequence</w>
       <w>rangeselector</w>
       <w>relaxometer</w>
       <w>rlxs</w>
@@ -43,6 +49,7 @@
       <w>sqnc</w>
       <w>sqncs</w>
       <w>tabview</w>
+      <w>widgetlist</w>
       <w>windowfactor</w>
     </words>
   </dictionary>

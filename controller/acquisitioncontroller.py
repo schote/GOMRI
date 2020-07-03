@@ -16,8 +16,8 @@ Acquisition Manager
 from PyQt5.QtCore import pyqtSlot
 from manager.acquisitionmanager import AcquisitionManager
 from plotview.exampleplot import ExamplePlot
-from operationmodes import operations
-from globalvars import nmspc
+from operationmodes import defaultoperations
+from operationsnamespace import Namespace as nmpsc
 from PyQt5.QtCore import QObject
 
 
@@ -58,11 +58,13 @@ class AcquisitionController(QObject):
 
         self.parent.clear_plotlayout()
 
-        op = operations['Example FID Spectrum'].properties
-        # [output, plot] = AcquisitionManager().get_exampleFidData(op[nmspc.systemproperties])
-        [output, plot] = AcquisitionManager().get_spectrum(op[nmspc.systemproperties],
-                                                           op[nmspc.shim])
+        op = defaultoperations['Example FID Spectrum'].systemproperties
+        [output, plot] = AcquisitionManager().get_exampleFidData(op)
+        # [output, plot] = AcquisitionManager().get_spectrum(op[nmspc.systemproperties],
+        #                                                           op[nmspc.shim])
         self.outputsection.set_parameters(output)
         self.parent.plotview_layout.addWidget(plot)
+
+        print("Operation: \n {}".format(op))
 
     # TODO: Startup routine (set frequency, set attenuation, set shim, upload sequence, etc. )

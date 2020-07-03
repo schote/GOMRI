@@ -23,8 +23,11 @@ class Spectrum:
     """
     Spectrum Operation Class
     """
-
-    def __init__(self, frequency, attenuation, sampletime, shim):
+    def __init__(self,
+                 frequency: float = None,
+                 attenuation: float = None,
+                 sampletime: float = None,
+                 shim: list = None):
         """
         Initialization of spectrum operation class
         @param frequency:       Frequency value for operation
@@ -32,34 +35,45 @@ class Spectrum:
         @param shim:            Shim values for operation
         @return:                None
         """
-        if len(shim) != 4:
-            warn('Invalid number of shim values.')
-            return
+        while len(shim) < 4:
+            shim += [0]
 
-        self.properties = {
-            nmspc.systemproperties: {
-                nmspc.frequency: frequency,
-                nmspc.attenuation: attenuation,
-                nmspc.sampletime: sampletime
-                },
-            nmspc.shim: {
-                nmspc.x_grad: shim[0],
-                nmspc.y_grad: shim[1],
-                nmspc.z_grad: shim[2],
-                nmspc.z2_grad: shim[3]
-                }
+        self._frequency = frequency
+        self._attenuation = attenuation
+        self._sampletime = sampletime
+        self._shim_x = shim[0]
+        self._shim_y = shim[1]
+        self._shim_z = shim[2]
+        self._shim_z2 = shim[3]
+
+    @property
+    def systemproperties(self) -> dict:
+        return {
+            nmspc.frequency: [self._frequency, '_frequency'],
+            nmspc.attenuation: [self._attenuation, '_attenuation'],
+            nmspc.sampletime: [self._sampletime, '_sampletime']
         }
 
-        self.acquisition = {
+    @property
+    def gradientshims(self):
+        return {
+            nmspc.x_grad: [self._shim_x, '_shim_x'],
+            nmspc.y_grad: [self._shim_y, '_shim_y'],
+            nmspc.z_grad: [self._shim_z, '_shim_z'],
+            nmspc.z2_grad: [self._shim_z2, '_shim_z2']
+        }
+
+    @property
+    def pulsesequence(self) -> dict:
+        return {
             nmspc.type: acqtypes.spectrum,
-            nmspc.sequence: {
-                sqncs.FID.str: sqncs.FID.path
-            }
+            nmspc.sequence: sqncs.FID
         }
 
-
-# Initialization of default operationslist
-operations = {
+"""
+Definition of default operations
+"""
+defaultoperations = {
     # Example FID corresponds to "get_exampleFidData()" -- prototype data set
     'Example FID Spectrum': Spectrum(20.0971, 10, 7.5, [0, 0, 0, 0]),
     'Spectrum Test': Spectrum(11.25811, 10, 20, [0, 0, 0, 0]),

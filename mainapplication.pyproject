@@ -17,6 +17,7 @@
         "view/inputparameter.ui",
         "view/outputparameter.ui",
         "view/connectiondialog.ui",
-        "plotview/exampleplot.py"
+        "plotview/exampleplot.py",
+        "assembler.py"
         ]
 }

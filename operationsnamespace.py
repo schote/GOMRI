@@ -15,7 +15,7 @@ class Namespace:
     frequency = "Frequency"
     attenuation = "Attenuation"
     sampletime = "Sample Time"
-    shim = "Shim Values"
+    shim = "Gradient Shim Values"
     x_grad = "X Gradient"
     y_grad = "Y Gradient"
     z_grad = "Z Gradient"
