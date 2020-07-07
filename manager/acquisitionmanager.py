@@ -85,7 +85,7 @@ class AcquisitionManager:
         SqncMngr.packSequence(sqncs.FID)
         Com.acquireSpectrum()
         Com.waitForTransmission()
-        tmp_data: np.complex64 = Com.readData(self._samples)
+        tmp_data: np.complex64 = Com.readAcquisitionData(self._samples)
 
         t1: float = time.time()
         acquisitiontime: float = (t1-t0)/60
@@ -126,7 +126,7 @@ class AcquisitionManager:
         Com.waitForTransmission()
 
         for n in range(p_npe):
-            tmp_data[n, :] = Com.readData(self._samples, p_frequency)
+            tmp_data[n, :] = Com.readAcquisitionData(self._samples)
             self.readoutFinished.emit()
 
         t1: float = time.time()
@@ -148,7 +148,7 @@ class AcquisitionManager:
         Com.acquireProjection(p_axis)
         Com.waitForTransmission()
 
-        tmp_data: np.complex64 = Com.readData(self._samples, p_frequency)
+        tmp_data: np.complex64 = Com.readAcquisitionData(self._samples)
 
         t1: float = time.time()
         acquisitiontime: float = (t1 - t0) / 60

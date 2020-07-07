@@ -35,19 +35,20 @@ class OperationsList(QListWidget):
 
         # Add operations to operations list
         self.addItems(list(defaultoperations.keys()))
-        self.itemClicked.connect(self.setParametersUI)
+        # self.itemClicked.connect(self.setParametersUI)
+        parent.onOperationChanged.connect(self.setParametersUI)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 
         # Make parent reachable from outside __init__
         self.parent = parent
 
-    def setParametersUI(self, op: dict = None) -> None:
+    def setParametersUI(self, operation: str = None) -> None:
         """
         Set input parameters from operation object
         @param op:  Operation object
         @return:    None
         """
-        operation = op.text()
+        # operation = op.text()
         # Reset row layout for input parameters
         for i in reversed(range(self.parent.layout_parameters.count())):
             self.parent.layout_parameters.itemAt(i).widget().setParent(None)

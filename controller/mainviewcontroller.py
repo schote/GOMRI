@@ -13,13 +13,15 @@ Main View Controller
 
 """
 
-from PyQt5.uic import loadUiType, loadUi
+
 
 # Example Plot
 # from plotview.exampleplot import ExamplePlot
 from PyQt5.QtCore import QFile, QTextStream
-from manager.acquisitionmanager import AcquisitionManager
+from PyQt5.QtWidgets import QListWidgetItem
+from PyQt5.uic import loadUiType, loadUi
 from controller.acquisitioncontroller import AcquisitionController
+from PyQt5.QtCore import pyqtSignal, pyqtSlot
 
 from controller.operationscontroller import OperationsList
 from controller.connectiondialog import ConnectionDialog
@@ -35,20 +37,24 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
     """
     MainViewController Class
     """
+    onOperationChanged = pyqtSignal(str)
+
     def __init__(self):
         super(MainViewController, self).__init__()
 
-        self.setupUi(self)
         self.ui = loadUi('view/mainview.ui')
+        self.setupUi(self)
         self.setupStylesheet(style.breezeDark)
 
         # Connection dialog
-        self.action_connect.triggered.connect(self.show_connectiondialog)
+        self.action_connect.triggered.connect(self.connectionDialogSlot)
         self.status_connection.setEnabled(False)
+        self.action_acquire.setEnabled(False)
 
         # Initialisation of operation list
-        oplist = OperationsList(self)
-        self.layout_operations.addWidget(oplist)
+        operationlist = OperationsList(self)
+        operationlist.itemClicked.connect(self.operationChangedSlot)
+        self.layout_operations.addWidget(operationlist)
 
         # Initialisation of output section
         outputsection = Output(self)
@@ -56,7 +62,19 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         # Initialisation of acquisition controller
         AcquisitionController(self, outputsection)
 
-    def show_connectiondialog(self) -> None:
+    @pyqtSlot(QListWidgetItem)
+    def operationChangedSlot(self, item: QListWidgetItem = None) -> None:
+        """
+        Operation changed slot function
+        @param item:    Selected Operation Item
+        @return:        None
+        """
+        operation = item.text()
+        self.onOperationChanged.emit(operation)
+        self.action_acquire.setEnabled(True)
+
+    @pyqtSlot(bool)
+    def connectionDialogSlot(self) -> None:
         """
         Opens connection dialog
         @return:    None
@@ -84,7 +102,8 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         stylesheet = stream.readAll()
         self.setStyleSheet(stylesheet)
 
-    def closeEvent(self, event) -> None:
+    @staticmethod
+    def closeEvent(event) -> None:
         """
         Overloaded close function
         @param event:   Close event

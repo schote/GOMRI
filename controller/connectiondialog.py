@@ -13,67 +13,60 @@ Connection Dialog
 
 """
 
-from PyQt5.QtCore import QRegExp
+from PyQt5.QtCore import QRegExp, pyqtSlot
 from PyQt5.QtGui import QRegExpValidator
+from PyQt5.QtWidgets import QDialog
 from PyQt5.uic import loadUiType, loadUi
-from server.communicationmanager import Com
+#from server.communicationmanager import Com
 
 ConnectionDialog_Form, ConnectionDialog_Base = loadUiType('view/connectiondialog.ui')
 
 
 class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
 
-    # connected = pyqtSignal()
-
     def __init__(self, parent=None):
         super(ConnectionDialog, self).__init__(parent)
 
+        self.setupUi(self)
         self.parent = parent
 
-        self.setupUi(self)
-
-        # Setup close event
-        # self.ui = loadUi('view/connectiondialog.ui')
-        # self.ui.closeEvent = self.closeEvent
-
-        # self.conn_help = QPixmap('ui/connection_help.png')
-        # self.help.setVisible(False)
+        # Com.onStatusChanged.connect(self.setConnectionStatusSlot)
 
         # connect interface signals
-        self.btn_connect.clicked.connect(self.connect_event)
-        # self.btn_addIP.clicked.connect(self.add_IP)
-        # self.btn_removeIP.clicked.connect(self.remove_IP)
+        self.button_connectToServer.clicked.connect(self.connectClientToServer)
+        self.button_removeServerAddress.clicked.connect(self.connectClientToServer)
+        self.button_addServerAddress.clicked.connect(self.connectClientToServer)
         self.status_label.setVisible(False)
 
-        IPvalidator = QRegExp(
+        ipValidator = QRegExp(
             '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.)'
             '{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$')
-        self.ip_box.setValidator(QRegExpValidator(IPvalidator, self))
-        self.ip_box.addItem('10.42.0.124')
+        self.ip_box.setValidator(QRegExpValidator(ipValidator, self))
+        self.ip_box.addItem('192.168.2.2')
         # for item in params.hosts: self.ip_box.addItem(item)
 
-    def connect_event(self):
+    def connectClientToServer(self):
+        print("Establish connection to a server")
         ip = self.ip_box.currentText()
+        print("Establish connection to {}".format(ip))
+
+        """
         connection = Com.connectClient(ip)
-        # connection = True
         if connection:
             self.status_label.setText('Connected')
-
         elif not connection:
             self.status_label.setText('Not connected')
             self.btn_connect.setText('Retry')
-            # self.help.setPixmap(self.conn_help)
-            # self.help.setVisible(True)
         else:
             self.status_label.setText('Not connected with status: '+str(connection))
             self.btn_connect.setText('Retry')
-            # self.help.setPixmap(self.conn_help)
-            # self.help.setVisible(True)
 
         self.parent.status_connection.setChecked(connection)
         self.status_label.setVisible(True)
+        """
 
-    def add_IP(self):
+
+    def addNewServerAddress(self):
 
         ip = self.ip_box.currentText()
         """
@@ -84,6 +77,15 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
         """
         print(ip)
 
-    def remove_IP(self):
+    def removeServerAddress(self):
         idx = self.ip_box.currentIndex()
         print(idx)
+
+    @pyqtSlot(str)
+    def setConnectionStatusSlot(self, status: str = None) -> None:
+        """
+        Set the connection status
+        @param status:  Server connection status
+        @return:        None
+        """
+        self.parent.status_connection.setText(status)
