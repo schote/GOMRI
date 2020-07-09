@@ -16,6 +16,7 @@ Connection Dialog
 from PyQt5.QtCore import QRegExp, pyqtSlot
 from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import QDialog
+
 from PyQt5.uic import loadUiType, loadUi
 #from server.communicationmanager import Com
 
@@ -44,6 +45,7 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
         self.ip_box.setValidator(QRegExpValidator(ipValidator, self))
         self.ip_box.addItem('192.168.2.2')
         # for item in params.hosts: self.ip_box.addItem(item)
+        print("connection dialog ready")
 
     def connectClientToServer(self):
         print("Establish connection to a server")

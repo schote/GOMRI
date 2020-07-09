@@ -16,12 +16,14 @@ import sys
 from PyQt5.QtWidgets import QApplication
 from controller.mainviewcontroller import MainViewController
 
-if __name__ == '__main__':
+VERSION = "0.1.0"
+AUTHOR = "David Schote"
 
+if __name__ == '__main__':
+    print("Graphical User Interface for Magnetic Resonance Imaging {} by {}".format(VERSION, AUTHOR))
     app = QApplication(sys.argv)
     gui = MainViewController()
     gui.show()
-
     sys.exit(app.exec_())
 
 """
