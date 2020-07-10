@@ -23,11 +23,12 @@ class Spectrum:
     """
     Spectrum Operation Class
     """
+
     def __init__(self,
                  frequency: float = None,
                  attenuation: float = None,
                  sampletime: float = None,
-                 shim: list = None):
+                 shim=None):
         """
         Initialization of spectrum operation class
         @param frequency:       Frequency value for operation
@@ -35,8 +36,11 @@ class Spectrum:
         @param shim:            Shim values for operation
         @return:                None
         """
-        while len(shim) < 4:
-            shim += [0]
+        if shim is None:
+            shim = [0, 0, 0, 0]
+        else:
+            while len(shim) < 4:
+                shim += [0]
 
         self._frequency = frequency
         self._attenuation = attenuation
@@ -70,9 +74,11 @@ class Spectrum:
             nmspc.sequence: sqncs.FID
         }
 
+
 """
 Definition of default operations
 """
+serviceOperation = Spectrum()
 defaultoperations = {
     # Example FID corresponds to "get_exampleFidData()" -- prototype data set
     'Example FID Spectrum': Spectrum(20.0971, 10, 7.5, [0, 0, 0, 0]),

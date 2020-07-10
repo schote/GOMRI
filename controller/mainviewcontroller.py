@@ -44,12 +44,8 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
 
         self.ui = loadUi('view/mainview.ui')
         self.setupUi(self)
-        self.setupStylesheet(style.breezeDark)
-
-        # Connection dialog
-        self.action_connect.triggered.connect(self.connectionDialogSlot)
-        self.status_connection.setEnabled(False)
-        self.action_acquire.setEnabled(False)
+        self.styleSheet = style.breezeDark
+        self.setupStylesheet(self.styleSheet)
 
         # Initialisation of operation list
         operationlist = OperationsList(self)
@@ -60,7 +56,15 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         outputsection = Output(self)
 
         # Initialisation of acquisition controller
-        AcquisitionController(self, outputsection)
+        acqCtrl = AcquisitionController(self, outputsection)
+
+        # Toolbar Actions
+        self.action_connect.triggered.connect(self.connectionDialogSlot)
+        self.action_changeappearance.triggered.connect(self.changeAppearance)
+        self.action_focusfrequency.triggered.connect(acqCtrl.focusFrequency)
+        self.action_acquire.setEnabled(False)
+
+        self.status_connection.setEnabled(False)
 
     @pyqtSlot(QListWidgetItem)
     def operationChangedSlot(self, item: QListWidgetItem = None) -> None:
@@ -96,11 +100,19 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         @param style:
         @return:
         """
+        self.styleSheet = style
         file = QFile(style)
         file.open(QFile.ReadOnly | QFile.Text)
         stream = QTextStream(file)
         stylesheet = stream.readAll()
         self.setStyleSheet(stylesheet)
+
+    @pyqtSlot(bool)
+    def changeAppearance(self) -> None:
+        if self.styleSheet is style.breezeDark:
+            self.setupStylesheet(style.breezeLight)
+        else:
+            self.setupStylesheet(style.breezeDark)
 
     @staticmethod
     def closeEvent(event) -> None:

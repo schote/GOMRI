@@ -18,7 +18,7 @@ from PyQt5.QtGui import QRegExpValidator
 from PyQt5.QtWidgets import QDialog
 
 from PyQt5.uic import loadUiType, loadUi
-#from server.communicationmanager import Com
+from server.communicationmanager import Com
 
 ConnectionDialog_Form, ConnectionDialog_Base = loadUiType('view/connectiondialog.ui')
 
@@ -48,11 +48,8 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
         print("connection dialog ready")
 
     def connectClientToServer(self):
-        print("Establish connection to a server")
         ip = self.ip_box.currentText()
-        print("Establish connection to {}".format(ip))
 
-        """
         connection = Com.connectClient(ip)
         if connection:
             self.status_label.setText('Connected')
@@ -65,7 +62,7 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
 
         self.parent.status_connection.setChecked(connection)
         self.status_label.setVisible(True)
-        """
+
 
 
     def addNewServerAddress(self):

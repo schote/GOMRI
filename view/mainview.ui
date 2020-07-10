@@ -326,6 +326,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_connect"/>
+   <addaction name="action_changeappearance"/>
   </widget>
   <widget class="QToolBar" name="AcquisitionControlToolbar">
    <property name="windowTitle">
@@ -338,6 +339,8 @@
     <bool>false</bool>
    </attribute>
    <addaction name="action_acquire"/>
+   <addaction name="action_focusfrequency"/>
+   <addaction name="separator"/>
    <addaction name="action_gpacontroller"/>
   </widget>
   <widget class="QToolBar" name="toolBar">
@@ -417,6 +420,30 @@
    </property>
    <property name="toolTip">
     <string>Export the Figure of the Acquired Signal</string>
+   </property>
+  </action>
+  <action name="action_focusfrequency">
+   <property name="icon">
+    <iconset>
+     <normaloff>../resources/icons/arrow-minimise.svg</normaloff>../resources/icons/arrow-minimise.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Focus Frequency</string>
+   </property>
+   <property name="toolTip">
+    <string>Focus Actual Larmor Frequency</string>
+   </property>
+  </action>
+  <action name="action_changeappearance">
+   <property name="icon">
+    <iconset>
+     <normaloff>../resources/icons/brush.svg</normaloff>../resources/icons/brush.svg</iconset>
+   </property>
+   <property name="text">
+    <string>Appearance</string>
+   </property>
+   <property name="toolTip">
+    <string>Change Window Appearance</string>
    </property>
   </action>
  </widget>
