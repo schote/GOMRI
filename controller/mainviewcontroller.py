@@ -41,15 +41,10 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
 
     def __init__(self):
         super(MainViewController, self).__init__()
-
         self.ui = loadUi('view/mainview.ui')
         self.setupUi(self)
-        self.setupStylesheet(style.breezeDark)
-
-        # Connection dialog
-        self.action_connect.triggered.connect(self.connectionDialogSlot)
-        self.status_connection.setEnabled(False)
-        self.action_acquire.setEnabled(False)
+        self.styleSheet = style.breezeDark
+        self.setupStylesheet(self.styleSheet)
 
         # Initialisation of operation list
         operationlist = OperationsList(self)
@@ -60,7 +55,16 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         outputsection = Output(self)
 
         # Initialisation of acquisition controller
-        AcquisitionController(self, outputsection)
+        acqCtrl = AcquisitionController(self, outputsection)
+
+        # Toolbar Actions
+        self.action_connect.triggered.connect(self.connectionDialogSlot)
+        self.action_changeappearance.triggered.connect(self.changeAppearanceSlot)
+        self.action_focusfrequency.triggered.connect(acqCtrl.focusFrequency)
+        self.action_acquire.setEnabled(False)
+
+        # Setup Status Bar Widget as Disabled
+        self.status_connection.setEnabled(False)
 
     @pyqtSlot(QListWidgetItem)
     def operationChangedSlot(self, item: QListWidgetItem = None) -> None:
@@ -82,7 +86,7 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         dialog = ConnectionDialog(self)
         dialog.show()
 
-    def clear_plotlayout(self) -> None:
+    def clearPlotviewLayout(self) -> None:
         """
         Clear the plot layout
         @return:    None
@@ -93,14 +97,26 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
     def setupStylesheet(self, style) -> None:
         """
         Setup application stylesheet
-        @param style:
-        @return:
+        @param style:   Stylesheet to be set
+        @return:        None
         """
+        self.styleSheet = style
         file = QFile(style)
         file.open(QFile.ReadOnly | QFile.Text)
         stream = QTextStream(file)
         stylesheet = stream.readAll()
         self.setStyleSheet(stylesheet)
+
+    @pyqtSlot(bool)
+    def changeAppearanceSlot(self) -> None:
+        """
+        Slot function to switch application appearance
+        @return:
+        """
+        if self.styleSheet is style.breezeDark:
+            self.setupStylesheet(style.breezeLight)
+        else:
+            self.setupStylesheet(style.breezeDark)
 
     @staticmethod
     def closeEvent(event) -> None:

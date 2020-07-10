@@ -35,7 +35,6 @@ class OperationsList(QListWidget):
 
         # Add operations to operations list
         self.addItems(list(defaultoperations.keys()))
-        # self.itemClicked.connect(self.setParametersUI)
         parent.onOperationChanged.connect(self.setParametersUI)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 
@@ -45,10 +44,9 @@ class OperationsList(QListWidget):
     def setParametersUI(self, operation: str = None) -> None:
         """
         Set input parameters from operation object
-        @param op:  Operation object
+        @param operation:  Operation object
         @return:    None
         """
-        # operation = op.text()
         # Reset row layout for input parameters
         for i in reversed(range(self.parent.layout_parameters.count())):
             self.parent.layout_parameters.itemAt(i).widget().setParent(None)
@@ -111,12 +109,14 @@ class OperationParameter(Parameter_Base, Parameter_Form):
         self.parameter = parameter
         self.label_name.setText(name)
         self.input_value.setText(str(parameter[0]))
+        # TODO: Setup validator to numbers only (float)
         # Connect text changed signal to getValue function
         self.input_value.textChanged.connect(self.get_value)
 
     def get_value(self) -> None:
         print("{}: {}".format(self.label_name.text(), self.input_value.text()))
         value: float = float(self.input_value.text())
+        # Reset value in operation object through the key in self.parameter[1]
         setattr(defaultoperations[self.operation], self.parameter[1], value)
 
     def set_value(self, value: int) -> None:

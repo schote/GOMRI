@@ -24,6 +24,7 @@ import time
 import csv
 from plotview.exampleplot import ExamplePlot
 
+
 class AcquisitionManager:
     """
     Acquisition manager class
@@ -40,8 +41,7 @@ class AcquisitionManager:
 
         # TODO: Set sequence here (once!)
 
-    @staticmethod
-    def get_exampleFidData(properties) -> [dict, ExamplePlot]:
+    def get_exampleFidData(self, properties) -> [dict, ExamplePlot]:
         """
         Get prototype data set (FID spectrum) with f = 20.0971, at = 10, ts = 7.5
         @param properties:  Operation properties object
@@ -56,20 +56,11 @@ class AcquisitionManager:
         dataobject = Data(cpxData,
                           properties[nmspc.frequency][0],
                           properties[nmspc.sampletime][0])
-
-        outputvalues = {
-            "SNR": round(dataobject.get_snr(), 4),
-            "FWHM [Hz]": round(dataobject.get_fwhm()[1], 4),
-            "FWHM [ppm]": round(dataobject.get_fwhm()[2], 4),
-            "Center Frequency [MHz]": round(dataobject.get_peakparameters()[1], 4),
-            "Signal Maximum [V]": round(dataobject.get_peakparameters()[3], 4),
-            "Acquisition Time [s]": round(properties[nmspc.sampletime][0], 4),
-            "Attenuation": round(properties[nmspc.attenuation][0], 4)
-        }
+        outputvalues = self.getOutputParameterObject(dataobject, properties)
 
         plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
 
-        return [outputvalues, plot]
+        return [outputvalues, plot, dataobject]
 
     def get_spectrum(self, properties, shim) -> [dict, ExamplePlot]:
         """
@@ -97,17 +88,7 @@ class AcquisitionManager:
                                 freq_range)
 
         plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
-
-        outputvalues = {
-            "SNR": round(dataobject.get_snr(), 4),
-            "FWHM [Hz]": round(dataobject.get_fwhm()[1], 4),
-            "FWHM [ppm]": round(dataobject.get_fwhm()[2], 4),
-            "Center Frequency [MHz]": round(dataobject.get_peakparameters()[1], 4),
-            "Signal Maximum [V]": round(dataobject.get_peakparameters()[3], 4),
-            "Acquisition Time [s]": round(acquisitiontime, 4),
-            "Sample Time [ms]": round(properties[nmspc.sampletime], 4),
-            "Attenuation": round(properties[nmspc.attenuation], 4)
-        }
+        outputvalues = self.getOutputParameterObject(dataobject, properties, acquisitiontime)
 
         return [outputvalues, plot]
 
@@ -158,6 +139,28 @@ class AcquisitionManager:
 
         return [tmp_data, acquisitiontime, p_axis]
 
+    def reaquireFrequency(self, frequency):
+        """
+        Reaquire with a different frequency (e.g. focus frequency)
+        @param frequency:   Frequency to be set
+        @return:            Output values, plot
+        """
+        freq_range = 50000
+        sampletime = 10
+        """
+        Com.setFrequency(frequency)
+        Com.waitForTransmission()
+        Com.acquireSpectrum()
+        Com.waitForTransmission()
+        tmp_data: np.complex64 = Com.readAcquisitionData(self._samples)
+        dataobject: Data = Data(tmp_data, frequency, sampletime, freq_range)
+        plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+        outputvalues = self.getOutputParameterObject(dataobject)
+
+        return [outputvalues, plot, dataobject]
+        """
+        print("Reaquire spectrum at {} MHz".format(frequency))
+
     @staticmethod
     def set_systemproperties(p_frequency: float, p_attenuation: float, p_gradients: list) -> None:
         """
@@ -176,3 +179,26 @@ class AcquisitionManager:
                          p_gradients[nmspc.z_grad])
         Com.waitForTransmission()
 
+    @staticmethod
+    def getOutputParameterObject(dataobject=None, properties=None, acquisitiontime=None) -> dict:
+        """
+        Function to create a dictionary of output parameters
+        @param dataobject:          Dataobject from DataManager()
+        @param properties:          Acquisition properties from operation
+        @param acquisitiontime:     Measured acquisition time
+        @return:                    Dict with output parameters
+        """
+        outputvalues: dict = {}
+        if dataobject is not None:
+            outputvalues["SNR"] = round(dataobject.get_snr(), 4)
+            outputvalues["FWHM [Hz]"] = round(dataobject.get_fwhm()[1], 4)
+            outputvalues["FWHM [ppm]"] = round(dataobject.get_fwhm()[2], 4)
+            outputvalues["Center Frequency [MHz]"] = round(dataobject.get_peakparameters()[1], 4)
+            outputvalues["Signal Maximum [V]"] = round(dataobject.get_peakparameters()[3], 4)
+        if properties is not None:
+            outputvalues["Sample Time [ms]"] = round(properties[nmspc.sampletime][0], 4)
+            outputvalues["Attenuation"] = round(properties[nmspc.attenuation][0], 4)
+        if acquisitiontime is not None:
+            outputvalues["Acquisition Time [s]"] = round(acquisitiontime, 4)
+
+        return outputvalues

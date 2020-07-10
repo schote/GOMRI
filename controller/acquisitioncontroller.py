@@ -1,6 +1,5 @@
 """
 Acquisition Manager
-
 @author:    David Schote
 @contact:   david.schote@ovgu.de
 @version:   2.0 (Beta)
@@ -9,14 +8,14 @@ Acquisition Manager
 @summary:   Class for controlling the acquisition
 
 @status:    Under development
-@todo:      Pre acquisition setup, implementation of GPA controller
+@todo:      Pre acquisition setup routine, implementation of GPA controller
 
 """
 
 from PyQt5.QtCore import pyqtSlot
 from manager.acquisitionmanager import AcquisitionManager
 from plotview.exampleplot import ExamplePlot
-from operationmodes import defaultoperations
+from operationmodes import defaultoperations, serviceOperation
 from operationsnamespace import Namespace as nmpsc
 from PyQt5.QtCore import QObject
 
@@ -27,6 +26,7 @@ class AcquisitionController(QObject):
 
         self.parent = parent
         self.outputsection = outputsection
+        self.acquisitionData = None
 
         parent.action_acquire.triggered.connect(self.startAcquisition)
 
@@ -52,18 +52,31 @@ class AcquisitionController(QObject):
         # TODO: Type dependent acquisition and plot routine
         self.parent.plotview_layout.addWidget(plot)
     """
+    @pyqtSlot(bool)
+    def focusFrequency(self):
+        if self.acquisitionData is not None:
+            self.parent.clearPlotviewLayout()
+            frequency = self.acquisitionData.get_peakparameters()[3]
+            AcquisitionManager().reaquireFrequency(frequency)
+            # [outputValues, plotView, dataObject] = AcquisitionManager().reaquireFrequency(frequency)
+            # self.outputsection.set_parameters(outputValues)
+            # self.parent.plotview_layout.addWidget(plotView)
+            # self.acquisitionData = dataObject
+        else:
+            print("No acquisition performed.")
 
-    @pyqtSlot()
+    @pyqtSlot(bool)
     def startAcquisition(self):
 
-        self.parent.clear_plotlayout()
+        self.parent.clearPlotviewLayout()
 
         op = defaultoperations['Example FID Spectrum'].systemproperties
-        [output, plot] = AcquisitionManager().get_exampleFidData(op)
+        [outputValues, plotView, dataObject] = AcquisitionManager().get_exampleFidData(op)
         # [output, plot] = AcquisitionManager().get_spectrum(op[nmspc.systemproperties],
         #                                                           op[nmspc.shim])
-        self.outputsection.set_parameters(output)
-        self.parent.plotview_layout.addWidget(plot)
+        self.outputsection.set_parameters(outputValues)
+        self.parent.plotview_layout.addWidget(plotView)
+        self.acquisitionData = dataObject
 
         print("Operation: \n {}".format(op))
 
