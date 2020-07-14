@@ -23,6 +23,7 @@ import numpy as np
 import time
 import csv
 from plotview.exampleplot import ExamplePlot
+from plotview.spectrumplot import SpectrumPlot
 
 
 class AcquisitionManager:
@@ -58,7 +59,8 @@ class AcquisitionManager:
                           properties[nmspc.sampletime][0])
         outputvalues = self.getOutputParameterObject(dataobject, properties)
 
-        plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+        # plot = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+        plot = SpectrumPlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
 
         return [outputvalues, plot, dataobject]
 
