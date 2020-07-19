@@ -57,14 +57,13 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         # Initialisation of acquisition controller
         acqCtrl = AcquisitionController(self, outputsection)
 
+        connectiondialog = ConnectionDialog(self)
+
         # Toolbar Actions
-        self.action_connect.triggered.connect(self.connectionDialogSlot)
+        self.action_connect.triggered.connect(connectiondialog.show)
         self.action_changeappearance.triggered.connect(self.changeAppearanceSlot)
         self.action_focusfrequency.triggered.connect(acqCtrl.focusFrequency)
         self.action_acquire.setEnabled(False)
-
-        # Setup Status Bar Widget as Disabled
-        self.status_connection.setEnabled(False)
 
     @pyqtSlot(QListWidgetItem)
     def operationChangedSlot(self, item: QListWidgetItem = None) -> None:

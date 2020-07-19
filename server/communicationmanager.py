@@ -29,9 +29,16 @@ import numpy as np
 import struct
 import time
 
-connected = QAbstractSocket.ConnectedState
-unconnected = QAbstractSocket.UnconnectedState
-socketState = QAbstractSocket.SocketState
+states = {
+    QAbstractSocket.UnconnectedState: "Unconnected",
+    QAbstractSocket.HostLookupState: "Host Lookup",
+    QAbstractSocket.ConnectingState: "Connecting",
+    QAbstractSocket.ConnectedState: "Connected",
+    QAbstractSocket.BoundState: "Bound",
+    QAbstractSocket.ClosingState: "Closing Connection",
+}
+status = QAbstractSocket.SocketState
+
 
 class CommunicationManager(QTcpSocket, QObject):
     """
@@ -42,46 +49,40 @@ class CommunicationManager(QTcpSocket, QObject):
     def __init__(self):
         super(CommunicationManager, self).__init__()
 
-        # self.stateChanged.connect(self.getConnectionStatus)
+        self.stateChanged.connect(self.getConnectionStatus)
 
     def connectClient(self, ip: str) -> [bool, int]:
         """
         Connect server and host through server's ip
         @param ip:  IP address of the server
-        @return:    Connection state
+        @return:    success of connection
         """
         self.connectToHost(ip, 1001)
         self.waitForConnected(1000)
-
-        if self.state() == connected:
+        if self.state() == QAbstractSocket.ConnectedState:
             print("Connection to server established.")
             return True
-        elif self.state() == unconnected:
-            print("Connection to server failed.")
-            return False
         else:
-            print("TCP socket in state {}".format(self.state()))
-            return [False, self.state()]
+            return False
 
-    def disconnectClient(self) -> None:
+    def disconnectClient(self) -> bool:
         """
         Disconnects server and host
-        @return:    None
+        @return:    success of disconnection
         """
         self.disconnectFromHost()
-        if self.state() is unconnected:
+        if self.state() is QAbstractSocket.UnconnectedState:
             print("Disconnected from server.")
+            return True
         else:
-            print("Connection to server still established.")
+            return False
 
-    @pyqtSlot(socketState)
-    def getConnectionStatus(self, status: socketState = None) -> None:
-        if status is connected:
-            self.statusChanged.emit('Connected')
-        elif status is unconnected:
-            self.statusChanged.emit('Not Connected')
+    @pyqtSlot(status)
+    def getConnectionStatus(self, state: status = None) -> None:
+        if state in states:
+            self.statusChanged.emit(states[state])
         else:
-            self.statusChanged.emit(str(status))
+            self.statusChanged.emit(str(state))
 
     def waitForTransmission(self) -> None:
         """

@@ -1,23 +1,20 @@
 """
 Connection Dialog
-
 @author:    David Schote
 @contact:   david.schote@ovgu.de
 @version:   2.0 (Beta)
 @change:    13/06/2020
 
-@summary:   TBD
+@summary:   Popup for connecting/disconnecting server and host
 
-@status:    Under development
-@todo:
+@status:    Works with Magdeburg server
+@todo:      Global list with ip's
 
 """
 
 from PyQt5.QtCore import QRegExp, pyqtSlot
 from PyQt5.QtGui import QRegExpValidator
-from PyQt5.QtWidgets import QDialog
-
-from PyQt5.uic import loadUiType, loadUi
+from PyQt5.uic import loadUiType
 from server.communicationmanager import Com
 
 ConnectionDialog_Form, ConnectionDialog_Base = loadUiType('view/connectiondialog.ui')
@@ -31,42 +28,29 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
         self.setupUi(self)
         self.parent = parent
 
-        # Com.onStatusChanged.connect(self.setConnectionStatusSlot)
+        Com.onStatusChanged.connect(self.setConnectionStatusSlot)
 
         # connect interface signals
         self.button_connectToServer.clicked.connect(self.connectClientToServer)
-        self.button_removeServerAddress.clicked.connect(self.connectClientToServer)
-        self.button_addServerAddress.clicked.connect(self.connectClientToServer)
-        self.status_label.setVisible(False)
+        self.button_disconnectFromServer.clicked.connect(Com.disconnectClient)
+        # self.button_removeServerAddress.clicked.connect(self.connectClientToServer)
+        # self.button_addServerAddress.clicked.connect(self.connectClientToServer)
+        self.button_disconnectFromServer.setEnabled(False)
 
         ipValidator = QRegExp(
             '^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.)'
             '{3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$')
         self.ip_box.setValidator(QRegExpValidator(ipValidator, self))
-        self.ip_box.addItem('192.168.2.2')
+        self.ip_box.addItems(['10.42.0.100', '192.168.2.2'])
         # for item in params.hosts: self.ip_box.addItem(item)
         print("connection dialog ready")
 
     def connectClientToServer(self):
         ip = self.ip_box.currentText()
-
-        connection = Com.connectClient(ip)
-        if connection:
-            self.status_label.setText('Connected')
-        elif not connection:
-            self.status_label.setText('Not connected')
-            self.btn_connect.setText('Retry')
-        else:
-            self.status_label.setText('Not connected with status: '+str(connection))
-            self.btn_connect.setText('Retry')
-
-        self.parent.status_connection.setChecked(connection)
-        self.status_label.setVisible(True)
-
-
+        Com.connectClient(ip)
 
     def addNewServerAddress(self):
-
+        # TODO: Global list with ip's
         ip = self.ip_box.currentText()
         """
         if not ip in params.hosts:
@@ -77,6 +61,7 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
         print(ip)
 
     def removeServerAddress(self):
+        # TODO: Global list with ip's
         idx = self.ip_box.currentIndex()
         print(idx)
 
@@ -87,4 +72,16 @@ class ConnectionDialog(ConnectionDialog_Base, ConnectionDialog_Form):
         @param status:  Server connection status
         @return:        None
         """
+        self.status_label.setText(status)
         self.parent.status_connection.setText(status)
+        print(status)
+
+        if status == "Connected":
+            self.button_disconnectFromServer.setEnabled(True)
+            self.button_connectToServer.setEnabled(False)
+        elif status == "Unconnected":
+            self.button_disconnectFromServer.setEnabled(False)
+            self.button_connectToServer.setEnabled(True)
+        else:
+            self.button_disconnectFromServer.setEnabled(True)
+            self.button_connectToServer.setEnabled(True)
