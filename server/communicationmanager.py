@@ -25,6 +25,7 @@ Communication Manager
 from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 from globalvars import grads, pax
+from server import server_comms as sc
 import numpy as np
 import struct
 import time
@@ -38,6 +39,29 @@ states = {
     QAbstractSocket.ClosingState: "Closing Connection",
 }
 status = QAbstractSocket.SocketState
+
+class Commands:
+    """
+    Commands Class for Marcos-Server
+    """
+    fpgaClock = 'fpga_clk' # array of 3 values unsigned int (clock words)
+    localOscillatorFrequency = 'lo_freq' # unsigned int (local oscillator freq. for TX/RX)
+    txClockDivider = 'tx_div' # unsigned int (clock divider for RF TX samples)
+    rfAmplitude = 'rf_amp' # unsigned int 16 bit (RF amplitude)
+    rxRate = 'rx_rate' # unsigned int 16 bit (tx sample rate???)
+    txSampleSize = 'tx_size' # unsigned int 16 bit (number of TX samples to return)
+    txSamplesPerPulse = 'tx_size' # unsigned int (number of TX samples per pulse)
+    gradientOffsetX = 'grad_offs_x' # unsigned int (X gradient channel shim)
+    gradientOffsetY = 'grad_offs_y' # unsigned int (Y gradient channel shim)
+    gradientOffsetZ = 'grad_offs_z' # unsigned int (Z gradient channel shim)
+    gradientMemoryX = 'grad_mem_x' # binary byte array (write X gradient channel memory)
+    gradientMemoryY = 'grad_mem_y' # binary byte array (write Y gradient channel memory)
+    gradientMemoryZ = 'grad_mem_z' # binary byte array (write Z gradient channel memory)
+    recomputeTxPulses = 'recomp_pul' # boolean (recompute the TX pulses)
+    txRfWaveform = 'raw_tx_data' # binary byte array (write the RF waveform)
+    sequenceData = 'seq_data' # binary byte array (pulse sequence instructions)
+    runAcquisition = 'acq' # unsigned int [samples] (runs 'seq_data' and returns array of 64-bit complex floats, length = samples)
+    testRxThroughput = 'test_throughput' # unsigned int [arg] (return array map, array-length = arg)
 
 
 class CommunicationManager(QTcpSocket, QObject):
@@ -92,6 +116,13 @@ class CommunicationManager(QTcpSocket, QObject):
         while True:
             if not self.waitForBytesWritten():
                 break
+
+    def sendMsgPack(self, commands: dict = None):
+        # TODO: Check if all commands are valid
+        packet = sc.construct_packet(commands)
+        response = sc.send_packet(packet, self)
+        # return np.frombuffer(response[4]['acq'], np.complex64)
+        print(response)
 
     def setSequence(self, bytearr_sequence: bytearray) -> bool:
         """

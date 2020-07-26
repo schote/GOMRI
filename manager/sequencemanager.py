@@ -38,7 +38,7 @@ class SequenceManager(QObject):
         }
 
     # Function to init and set FID -- only acquire call is necessary afterwards
-    def packSequence(self, sqnc: SqncObject) -> None:
+    def packSequence(self, sqnc: SqncObject) -> bool:
         """
         Pack a sequence and call upload
         @param sqnc:    Sequence to be packed
