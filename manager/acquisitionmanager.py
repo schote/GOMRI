@@ -101,6 +101,7 @@ class AcquisitionManager:
         @param p_npe:       Number of phase encoding steps (parameter)
         @param p_tr:        Repetition time in ms (parameter)
         @return:            Raw data in 2D array, acquisition time
+        TODO:   Rework function
         """
         tmp_data: np.ndarray = np.array(np.zeros(p_npe, self._samples), ndmin=2, dtype=np.complex64)
 
@@ -126,6 +127,7 @@ class AcquisitionManager:
         @param p_axis:      Axis (parameter)
         @param p_frequency: Acquisition frequency (parameter)
         @return:            1D raw data, acquisition time
+        TODO:   Rework function
         """
         t0: float = time.time()
         Com.acquireProjection(p_axis)
@@ -146,6 +148,7 @@ class AcquisitionManager:
         Reaquire with a different frequency (e.g. focus frequency)
         @param frequency:   Frequency to be set
         @return:            Output values, plot
+        TODO:   Rework function
         """
         freq_range = 50000
         sampletime = 10

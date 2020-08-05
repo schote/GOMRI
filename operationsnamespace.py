@@ -10,11 +10,13 @@ Operations Namespace
 
 """
 
+
 class Namespace:
     systemproperties = "System Properties"
     frequency = "Frequency"
     attenuation = "Attenuation"
     sampletime = "Sample Time"
+    samples = "RX Samples"
     shim = "Gradient Shim Values"
     x_grad = "X Gradient"
     y_grad = "Y Gradient"
@@ -23,6 +25,7 @@ class Namespace:
     sequence = "sequence"
     sqncproperties = "Sequence Properties"
     type = "Acquisition Type"
+    gradwaveform = "Gradient Waveform"
 
 
 class AcquisitionTypes:

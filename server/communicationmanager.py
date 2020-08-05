@@ -21,13 +21,17 @@ Communication Manager
 @todo:
 
 """
+from typing import Dict, Any, Union, Tuple
 
 from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 from globalvars import grads, pax
+from operationsnamespace import Namespace as nmspc
+
 from server import server_comms as sc
 import numpy as np
 import struct
+import msgpack
 import time
 
 states = {
@@ -40,6 +44,8 @@ states = {
 }
 status = QAbstractSocket.SocketState
 
+fpga_clk = 125.0
+
 class Commands:
     """
     Commands Class for Marcos-Server
@@ -50,7 +56,7 @@ class Commands:
     rfAmplitude = 'rf_amp' # unsigned int 16 bit (RF amplitude)
     rxRate = 'rx_rate' # unsigned int 16 bit (tx sample rate???)
     txSampleSize = 'tx_size' # unsigned int 16 bit (number of TX samples to return)
-    txSamplesPerPulse = 'tx_size' # unsigned int (number of TX samples per pulse)
+    txSamplesPerPulse = 'tx_samples' # unsigned int (number of TX samples per pulse)
     gradientOffsetX = 'grad_offs_x' # unsigned int (X gradient channel shim)
     gradientOffsetY = 'grad_offs_y' # unsigned int (Y gradient channel shim)
     gradientOffsetZ = 'grad_offs_z' # unsigned int (Z gradient channel shim)
@@ -62,7 +68,7 @@ class Commands:
     sequenceData = 'seq_data' # binary byte array (pulse sequence instructions)
     runAcquisition = 'acq' # unsigned int [samples] (runs 'seq_data' and returns array of 64-bit complex floats, length = samples)
     testRxThroughput = 'test_throughput' # unsigned int [arg] (return array map, array-length = arg)
-
+    requestPacket = 0
 
 class CommunicationManager(QTcpSocket, QObject):
     """
@@ -117,28 +123,51 @@ class CommunicationManager(QTcpSocket, QObject):
             if not self.waitForBytesWritten():
                 break
 
-    def sendMsgPack(self, commands: dict = None):
-        # TODO: Check if all commands are valid
-        packet = sc.construct_packet(commands)
-        response = sc.send_packet(packet, self)
-        # return np.frombuffer(response[4]['acq'], np.complex64)
-        print(response)
+    @staticmethod
+    def constructPropertyPacket(operation) -> list:
 
-    def setSequence(self, bytearr_sequence: bytearray) -> bool:
-        """
-        Upload a sequence file to the server
-        @param bytearr_sequence:    Byte array to be uploaded
-        @return:                    None
-        """
-        self.write(struct.pack('<I', 4 << 28))
-        self.write(bytearr_sequence)
+        packetIdx: int = 0
+        packet: dict = {}
 
-        while True:  # Wait until bytes written
-            if not self.waitForBytesWritten():
+        if hasattr(operation, 'systemproperties'):
+            sys_prop = operation.systemproperties()
+            for key in list(sys_prop.keys()):
+                if len(sys_prop[key] == 3):
+                    packet[sys_prop[key][2]] = sys_prop[key][0]
+
+        if hasattr(operation, 'gradientshims'):
+            shim = operation.gradientshims()
+            packet[Commands.gradientOffsetX] = shim[nmspc.x_grad]
+            packet[Commands.gradientOffsetY] = shim[nmspc.y_grad]
+            packet[Commands.gradientOffsetZ] = shim[nmspc.z_grad]
+
+        fields = [Commands.requestPacket, packetIdx, 0, packet]
+        return fields
+
+    @staticmethod
+    def constructSequencePacket(operation) -> list:
+
+        packetIdx: int = 0
+        packet: dict = {}
+
+        if hasattr(operation, 'pulsesequence'):
+            seq = operation.pulsesequence()
+            packet[Commands.sequenceData] = seq[nmspc.sequence][1]
+
+        fields = [Commands.requestPacket, packetIdx, 0, packet]
+        return fields
+
+    def sendPacket(self, packet):
+        self.write(msgpack.packb(packet))
+        unpacker = msgpack.Unpacker()
+
+        while True:
+            buf = self.read(1024)
+            if not buf:
                 break
-            # TODO: Include condition to break loop after certain time -> return false
-
-        return True
+            unpacker.feed(buf)
+            for o in unpacker:  # ugly way of doing it
+                return o  # quit function after 1st reply (could make this a thread in the future)
 
     def setFrequency(self, freq: float) -> None:
         """
@@ -148,99 +177,6 @@ class CommunicationManager(QTcpSocket, QObject):
         """
         self.write(struct.pack('<I', 2 << 28 | int(1.0e6 * freq)))
         print("Set frequency!")
-
-    def setAttenuation(self, at) -> None:
-        """
-        Set attenuation value on the server
-        @param at:      Attenuation in dB
-        @return:        None
-        """
-        self.write(struct.pack('<I', 3 << 28 | int(abs(at) / 0.25)))
-        print("Set attenuation!")
-
-    def setGradients(self, gx=None, gy=None, gz=None, gz2=None) -> None:
-        """
-        Set gradient offset on the server
-        @param gx:      X-gradient, offset in mA
-        @param gy:      Y-gradient, offset in mA
-        @param gz:      Z-gradient, offset in mA
-        @param gz2:     Z2-gradient, offset in mA
-        @return:        None
-        """
-        if gx is not None:
-            if np.sign(gx) < 0:
-                sign = 1
-            else:
-                sign = 0
-            self.write(struct.pack('<I', 5 << 28 | grads.X << 24 | sign << 20 | abs(gx)))
-        if gy is not None:
-            if np.sign(gy) < 0:
-                sign = 1
-            else:
-                sign = 0
-            self.write(struct.pack('<I', 5 << 28 | grads.Y << 24 | sign << 20 | abs(gy)))
-        if gz is not None:
-            if np.sign(gz) < 0:
-                sign = 1
-            else:
-                sign = 0
-            self.write(struct.pack('<I', 5 << 28 | grads.Z << 24 | sign << 20 | abs(gz)))
-        if gz2 is not None:
-            if np.sign(gz2) < 0:
-                sign = 1
-            else:
-                sign = 0
-            self.write(struct.pack('<I', 5 << 28 | grads.Z2 << 24 | sign << 20 | abs(gz2)))
-
-        while True:  # Wait until bytes written
-            if not self.waitForBytesWritten():
-                break
-
-    def acquireSpectrum(self) -> None:
-        """
-        Trigger spectrum acquisition
-        @return:    None
-        """
-        self.write(struct.pack('<I', 1 << 28))
-
-    def acquireProjection(self, p_axis: int) -> None:
-        """
-        Trigger projection acquisition
-        @param p_axis:    Axis of projection (property)
-        @return:        None
-        """
-        if p_axis is not pax.x or pax.y or pax.z:
-            return
-        else:
-            self.write(struct.pack('<I', 7 << 28 | p_axis))
-
-    def acquireImage(self, p_npe: int = 64, p_tr: int = 4000) -> None:
-        """
-        Trigger image acquisition
-        @param p_npe:   Number of phase encoding steps (property)
-        @param p_tr:    Repetition time in ms (property)
-        @return:        None
-        """
-        self.write(struct.pack('<I', 6 << 28 | p_npe << 16 | p_tr))
-
-    def readAcquisitionData(self, size: int) -> np.complex64:
-        """
-        Perform a readout by receiving acquired data from server
-        @param size:    Size of byte array to be read
-        @return:        Complex data
-        """
-        buffer = bytearray(8 * size)
-        while True:  # Read data
-            self.waitForReadyRead()
-            datasize = self.bytesAvailable()
-            # print(datasize)
-            time.sleep(0.0001)
-            if datasize == 8 * size:
-                print("Readout finished : ", datasize)
-                buffer[0:8 * size] = self.read(8 * size)
-                return np.frombuffer(buffer)
-            else:
-                continue
 
 
 Com = CommunicationManager()

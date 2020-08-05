@@ -18,6 +18,7 @@ from PyQt5.QtCore import Qt
 from operationmodes import defaultoperations
 from operationsnamespace import Namespace as nmspc
 from PyQt5.uic import loadUiType
+from server.communicationmanager import Com
 
 Parameter_Form, Parameter_Base = loadUiType('view/inputparameter.ui')
 
@@ -35,11 +36,16 @@ class OperationsList(QListWidget):
 
         # Add operations to operations list
         self.addItems(list(defaultoperations.keys()))
-        parent.onOperationChanged.connect(self.setParametersUI)
+        parent.onOperationChanged.connect(self.triggeredOperationChanged)
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)
 
         # Make parent reachable from outside __init__
         self.parent = parent
+
+    def triggeredOperationChanged(self, operation: str = None) -> None:
+        packet = Com.constructSequencePacket(operation)
+        Com.sendPacket(packet)
+        self.setParametersUI(operation)
 
     def setParametersUI(self, operation: str = None) -> None:
         """
@@ -63,6 +69,8 @@ class OperationsList(QListWidget):
             shims = defaultoperations[operation].gradientshims
             inputwidgets += [(self.generateLabelItem(nmspc.shim))]
             inputwidgets += (self.generateWidgetsFromDict(shims))
+
+        # TODO: Insert sequence upload right here
 
         for item in inputwidgets:
             self.parent.layout_parameters.addWidget(item)

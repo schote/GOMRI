@@ -18,6 +18,9 @@ from plotview.exampleplot import ExamplePlot
 from operationmodes import defaultoperations, serviceOperation
 from operationsnamespace import Namespace as nmpsc
 from PyQt5.QtCore import QObject
+from server.communicationmanager import Com
+from plotview import exampleplot
+from manager.datamanager import DataManager as Data
 
 
 class AcquisitionController(QObject):
@@ -52,6 +55,7 @@ class AcquisitionController(QObject):
         # TODO: Type dependent acquisition and plot routine
         self.parent.plotview_layout.addWidget(plot)
     """
+
     @pyqtSlot(bool)
     def focusFrequency(self):
         if self.acquisitionData is not None:
@@ -68,16 +72,21 @@ class AcquisitionController(QObject):
     @pyqtSlot(bool)
     def startAcquisition(self):
 
+        _operation = defaultoperations['Example FID Spectrum'].systemproperties
+        _frequency = _operation.systemproperties[nmpsc.frequency]
+        _tmp_pack = Com.constructSequencePacket(_operation)
+        _tmp_data = Com.sendPacket(_tmp_pack)
+
         self.parent.clearPlotviewLayout()
 
-        op = defaultoperations['Example FID Spectrum'].systemproperties
-        [outputValues, plotView, dataObject] = AcquisitionManager().get_exampleFidData(op)
-        # [output, plot] = AcquisitionManager().get_spectrum(op[nmspc.systemproperties],
-        #                                                           op[nmspc.shim])
-        self.outputsection.set_parameters(outputValues)
-        self.parent.plotview_layout.addWidget(plotView)
-        self.acquisitionData = dataObject
+        _dataobject: Data = Data(_tmp_data, _frequency)
+        _plotview = ExamplePlot(_dataobject.f_axis, _dataobject.f_fftMagnitude, "frequency", "signal intensity")
+        _outputvalues = self.getOutputParameterObject(_dataobject, _operation.systemproperties)
 
-        print("Operation: \n {}".format(op))
+        self.outputsection.set_parameters(_outputvalues)
+        self.parent.plotview_layout.addWidget(_plotview)
+        self.acquisitionData = _dataobject
+
+        print("Operation: \n {}".format(_operation))
 
     # TODO: Startup routine (set frequency, set attenuation, set shim, upload sequence, etc. )
