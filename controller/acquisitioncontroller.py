@@ -18,7 +18,7 @@ from plotview.exampleplot import ExamplePlot
 from operationmodes import defaultoperations, serviceOperation
 from operationsnamespace import Namespace as nmpsc
 from PyQt5.QtCore import QObject
-from server.communicationmanager import Com
+from server.communicationmanager import Com, Commands
 from plotview import exampleplot
 from manager.datamanager import DataManager as Data
 
@@ -74,11 +74,15 @@ class AcquisitionController(QObject):
 
         _operation = defaultoperations['Example FID Spectrum'].systemproperties
         _frequency = _operation.systemproperties[nmpsc.frequency]
-        _tmp_pack = Com.constructSequencePacket(_operation)
-        _tmp_data = Com.sendPacket(_tmp_pack)
+        # _tmp_sequence_pack = Com.constructSequencePacket(_operation)
+        _tmp_property_pack = Com.constructPropertyPacket(_operation)
+        _acquire = {Commands.runAcquisition: 5000}
+        # _tmp_pack = {**_tmp_property_pack, **_tmp_sequence_pack, **_acquire}
+        _tmp_pack = {**_tmp_property_pack, **_acquire}
 
         self.parent.clearPlotviewLayout()
 
+        _tmp_data = Com.sendPacket(_tmp_pack)
         _dataobject: Data = Data(_tmp_data, _frequency)
         _plotview = ExamplePlot(_dataobject.f_axis, _dataobject.f_fftMagnitude, "frequency", "signal intensity")
         _outputvalues = self.getOutputParameterObject(_dataobject, _operation.systemproperties)

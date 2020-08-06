@@ -27,6 +27,7 @@ from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
 from globalvars import grads, pax
 from operationsnamespace import Namespace as nmspc
+from warnings import warn
 
 from server import server_comms as sc
 import numpy as np
@@ -150,9 +151,11 @@ class CommunicationManager(QTcpSocket, QObject):
         packetIdx: int = 0
         packet: dict = {}
 
-        if hasattr(operation, 'pulsesequence'):
+        if hasattr(operation, 'pulsesequence') and len(operation.pulsesequence()) > 1:
             seq = operation.pulsesequence()
             packet[Commands.sequenceData] = seq[nmspc.sequence][1]
+        else:
+            warn("ERROR: No sequence bytestream!")
 
         fields = [Commands.requestPacket, packetIdx, 0, packet]
         return fields
