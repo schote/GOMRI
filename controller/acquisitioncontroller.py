@@ -12,6 +12,7 @@ Acquisition Manager
 
 """
 
+import msgpack
 from PyQt5.QtCore import pyqtSlot
 from manager.acquisitionmanager import AcquisitionManager
 from plotview.exampleplot import ExamplePlot
@@ -21,6 +22,11 @@ from PyQt5.QtCore import QObject
 from server.communicationmanager import Com, Commands
 from plotview import exampleplot
 from manager.datamanager import DataManager as Data
+
+version_major = 0
+version_minor = 0
+version_debug = 8
+version_full = (version_major << 16) | (version_minor << 8) | version_debug
 
 
 class AcquisitionController(QObject):
@@ -72,25 +78,46 @@ class AcquisitionController(QObject):
     @pyqtSlot(bool)
     def startAcquisition(self):
 
-        _operation = defaultoperations['Example FID Spectrum'].systemproperties
-        _frequency = _operation.systemproperties[nmpsc.frequency]
-        # _tmp_sequence_pack = Com.constructSequencePacket(_operation)
-        _tmp_property_pack = Com.constructPropertyPacket(_operation)
-        _acquire = {Commands.runAcquisition: 5000}
-        # _tmp_pack = {**_tmp_property_pack, **_tmp_sequence_pack, **_acquire}
-        _tmp_pack = {**_tmp_property_pack, **_acquire}
+        operation = defaultoperations['Example FID Spectrum']
+        frequency = operation.systemproperties[nmpsc.frequency]
+        #tmp_sequence_pack = Com.constructSequencePacket(operation)
+        tmp_property_pack = Com.constructPropertyPacket(operation)
+        acquire_cmd = {Commands.runAcquisition: 5000}
+        #t mp_pack = {**tmp_property_pack, **_tmp_sequence_pack, **_acquire}
+        # tmp_pack = {**tmp_property_pack, **acquire_cmd}
+        tmp_pack = {
+            'lo_freq': self.lo_freq_bin,
+            'rx_rate': self.rx_div_real,
+            'tx_div': self.tx_div,
+            'tx_size': self.tx_data.size * 4,
+            'raw_tx_data': self.tx_bytes,
+            'grad_mem_x': self.grad_x_bytes,
+            'grad_mem_y': self.grad_y_bytes,
+            'grad_mem_z': self.grad_z_bytes,
+            'seq_data': self.instructions,
+            'acq': self.samples }
+
+        packetIdx: int = 0
+        command: int = 0 # 0 equals request a packet
+        assert version_major < 256 and version_minor < 256 and version_debug < 256, "Version is too high for a byte!"
+        version = (version_major << 16) | (version_minor << 8) | version_major
+        fields = [command, packetIdx, 0, version, tmp_pack]
+
+        print("Fields to be send: {}".format(fields))
 
         self.parent.clearPlotviewLayout()
+        print(msgpack.packb(fields))
+        # tmp_data = Com.sendPacket(msgpack.packb(fields))
+        """
+        dataobject: Data = Data(tmp_data, frequency)
+        plotview = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+        outputvalues = self.getOutputParameterObject(dataobject, operation.systemproperties)
 
-        _tmp_data = Com.sendPacket(_tmp_pack)
-        _dataobject: Data = Data(_tmp_data, _frequency)
-        _plotview = ExamplePlot(_dataobject.f_axis, _dataobject.f_fftMagnitude, "frequency", "signal intensity")
-        _outputvalues = self.getOutputParameterObject(_dataobject, _operation.systemproperties)
+        self.outputsection.set_parameters(outputvalues)
+        self.parent.plotview_layout.addWidget(plotview)
+        self.acquisitionData = dataobject
 
-        self.outputsection.set_parameters(_outputvalues)
-        self.parent.plotview_layout.addWidget(_plotview)
-        self.acquisitionData = _dataobject
+        print("Operation: \n {}".format(operation))
+        """
 
-        print("Operation: \n {}".format(_operation))
-
-    # TODO: Startup routine (set frequency, set attenuation, set shim, upload sequence, etc. )
+# TODO: Startup routine (set frequency, set attenuation, set shim, upload sequence, etc. )

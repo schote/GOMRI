@@ -88,12 +88,13 @@ class CommunicationManager(QTcpSocket, QObject):
         @param ip:  IP address of the server
         @return:    success of connection
         """
-        self.connectToHost(ip, 1001)
-        self.waitForConnected(1000)
+        self.connectToHost(ip, 11111)
+        self.waitForConnected(2000)
         if self.state() == QAbstractSocket.ConnectedState:
             print("Connection to server established.")
             return True
         else:
+            print("Connection to server failed.")
             return False
 
     def disconnectClient(self) -> bool:
@@ -125,25 +126,23 @@ class CommunicationManager(QTcpSocket, QObject):
                 break
 
     @staticmethod
-    def constructPropertyPacket(operation) -> list:
+    def constructPropertyPacket(operation) -> dict:
 
-        packetIdx: int = 0
         packet: dict = {}
 
         if hasattr(operation, 'systemproperties'):
-            sys_prop = operation.systemproperties()
+            sys_prop = operation.systemproperties
             for key in list(sys_prop.keys()):
-                if len(sys_prop[key] == 3):
+                if len(sys_prop[key]) == 3:
                     packet[sys_prop[key][2]] = sys_prop[key][0]
 
         if hasattr(operation, 'gradientshims'):
-            shim = operation.gradientshims()
-            packet[Commands.gradientOffsetX] = shim[nmspc.x_grad]
-            packet[Commands.gradientOffsetY] = shim[nmspc.y_grad]
-            packet[Commands.gradientOffsetZ] = shim[nmspc.z_grad]
+            shim = operation.gradientshims
+            packet[Commands.gradientOffsetX] = shim[nmspc.x_grad][0]
+            packet[Commands.gradientOffsetY] = shim[nmspc.y_grad][0]
+            packet[Commands.gradientOffsetZ] = shim[nmspc.z_grad][0]
 
-        fields = [Commands.requestPacket, packetIdx, 0, packet]
-        return fields
+        return packet
 
     @staticmethod
     def constructSequencePacket(operation) -> list:

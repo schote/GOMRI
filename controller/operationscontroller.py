@@ -43,8 +43,8 @@ class OperationsList(QListWidget):
         self.parent = parent
 
     def triggeredOperationChanged(self, operation: str = None) -> None:
-        packet = Com.constructSequencePacket(operation)
-        Com.sendPacket(packet)
+        # packet = Com.constructSequencePacket(operation) # TODO: change sequence
+        # Com.sendPacket(packet)
         self.setParametersUI(operation)
 
     def setParametersUI(self, operation: str = None) -> None:
