@@ -8,20 +8,19 @@ Acquisition Manager
 @summary:   Class for controlling the acquisition
 
 @status:    Under development
-@todo:      Pre acquisition setup routine, implementation of GPA controller
+@todo:      Subdivide "startAcquisition" routine into subroutines (modularity)
 
 """
 
-import msgpack
+import numpy as np
 from PyQt5.QtCore import pyqtSlot
 from manager.acquisitionmanager import AcquisitionManager
-from plotview.exampleplot import ExamplePlot
-from operationmodes import defaultoperations, serviceOperation
+from plotview.spectrumplot import SpectrumPlot
+from operationmodes import defaultoperations
 from operationsnamespace import Namespace as nmpsc
 from PyQt5.QtCore import QObject
 from server.communicationmanager import Com, Commands
-from plotview import exampleplot
-from manager.datamanager import DataManager as Data
+from manager.datamanager import DataManager
 
 version_major = 0
 version_minor = 0
@@ -30,11 +29,12 @@ version_full = (version_major << 16) | (version_minor << 8) | version_debug
 
 
 class AcquisitionController(QObject):
-    def __init__(self, parent=None, outputsection=None):
+    def __init__(self, parent=None, outputsection=None, operationlist=None):
         super(AcquisitionController, self).__init__(parent)
 
         self.parent = parent
         self.outputsection = outputsection
+        self.operationlist = operationlist
         self.acquisitionData = None
 
         parent.action_acquire.triggered.connect(self.startAcquisition)
@@ -62,6 +62,8 @@ class AcquisitionController(QObject):
         self.parent.plotview_layout.addWidget(plot)
     """
 
+    # TODO: Implementation of "reacquire" command with different frequency
+    """
     @pyqtSlot(bool)
     def focusFrequency(self):
         if self.acquisitionData is not None:
@@ -74,50 +76,42 @@ class AcquisitionController(QObject):
             # self.acquisitionData = dataObject
         else:
             print("No acquisition performed.")
+    """
 
     @pyqtSlot(bool)
     def startAcquisition(self):
 
-        operation = defaultoperations['Example FID Spectrum']
-        frequency = operation.systemproperties[nmpsc.frequency]
-        #tmp_sequence_pack = Com.constructSequencePacket(operation)
-        tmp_property_pack = Com.constructPropertyPacket(operation)
-        acquire_cmd = {Commands.runAcquisition: 5000}
-        #t mp_pack = {**tmp_property_pack, **_tmp_sequence_pack, **_acquire}
-        # tmp_pack = {**tmp_property_pack, **acquire_cmd}
-        tmp_pack = {
-            'lo_freq': self.lo_freq_bin,
-            'rx_rate': self.rx_div_real,
-            'tx_div': self.tx_div,
-            'tx_size': self.tx_data.size * 4,
-            'raw_tx_data': self.tx_bytes,
-            'grad_mem_x': self.grad_x_bytes,
-            'grad_mem_y': self.grad_y_bytes,
-            'grad_mem_z': self.grad_z_bytes,
-            'seq_data': self.instructions,
-            'acq': self.samples }
-
+        self.parent.clearPlotviewLayout()
+        operation = defaultoperations[self.operationlist.getCurrentOperation()]
+        frequency = operation.systemproperties[nmpsc.frequency][0]
         packetIdx: int = 0
-        command: int = 0 # 0 equals request a packet
+        command: int = 0    # 0 equals request a packet
         assert version_major < 256 and version_minor < 256 and version_debug < 256, "Version is too high for a byte!"
         version = (version_major << 16) | (version_minor << 8) | version_major
-        fields = [command, packetIdx, 0, version, tmp_pack]
 
-        print("Fields to be send: {}".format(fields))
+        # Get/construct package to be send
+        tmp_sequence_pack = Com.constructSequencePacket(operation)
+        tmp_property_pack = Com.constructPropertyPacket(operation)
+        tmp_package = {**tmp_sequence_pack, **tmp_sequence_pack, **tmp_property_pack}
+        fields = [command, packetIdx, 0, version, tmp_package]
 
-        self.parent.clearPlotviewLayout()
-        print(msgpack.packb(fields))
-        # tmp_data = Com.sendPacket(msgpack.packb(fields))
-        """
-        dataobject: Data = Data(tmp_data, frequency)
-        plotview = ExamplePlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
-        outputvalues = self.getOutputParameterObject(dataobject, operation.systemproperties)
+        response = Com.sendPacket(fields)
+        tmp_data = np.frombuffer(response[4]['acq'], np.complex64)
+
+        # print("Data: {}".format(tmp_data))
+        print("Size of received data: {}".format(len(tmp_data)))
+
+        dataobject: DataManager = DataManager(tmp_data, frequency, len(tmp_data))
+        f_plotview = SpectrumPlot(dataobject.f_axis, dataobject.f_fftMagnitude, "frequency", "signal intensity")
+        t_plotview = SpectrumPlot(dataobject.t_axis, dataobject.t_magnitude, "time", "signal intensity")
+        outputvalues = AcquisitionManager().getOutputParameterObject(dataobject, operation.systemproperties)
 
         self.outputsection.set_parameters(outputvalues)
-        self.parent.plotview_layout.addWidget(plotview)
+        self.parent.plotview_layout.addWidget(f_plotview)
+        self.parent.plotview_layout.addWidget(t_plotview)
         self.acquisitionData = dataobject
 
         print("Operation: \n {}".format(operation))
-        """
+
 
 # TODO: Startup routine (set frequency, set attenuation, set shim, upload sequence, etc. )

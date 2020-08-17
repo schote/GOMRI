@@ -5,6 +5,9 @@ from PyQt5 import QtChart
 from warnings import warn
 import numpy as np
 
+"""
+(!) This class is obsolete
+"""
 
 class ExamplePlot(QtChart.QChartView):
     def __init__(self, xData: list,

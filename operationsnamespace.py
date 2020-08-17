@@ -6,7 +6,7 @@ Operations Namespace
 @version:   1.0
 @change:    06/28/2020
 
-@summary:
+@summary:   Namespace for operations
 
 """
 
@@ -28,7 +28,6 @@ class Namespace:
     gradwaveform = "Gradient Waveform"
 
 
-class AcquisitionTypes:
-    spectrum = "Spectrum"
-    projection = "Projection"
-    kspace = "k-Space"
+class Reconstruction:
+    spectrum = "1D FFT"
+    kspace = "2D FFT"
