@@ -8,7 +8,7 @@ Main View Controller
 
 @summary:   TBD
 
-@status:    Under development
+@status:    Sets up the main view, its views and controllers
 @todo:
 
 """
@@ -55,14 +55,14 @@ class MainViewController(MainWindow_Base, MainWindow_Form):
         outputsection = Output(self)
 
         # Initialisation of acquisition controller
-        acqCtrl = AcquisitionController(self, outputsection)
+        acqCtrl = AcquisitionController(self, outputsection, operationlist)
 
         connectiondialog = ConnectionDialog(self)
 
         # Toolbar Actions
         self.action_connect.triggered.connect(connectiondialog.show)
         self.action_changeappearance.triggered.connect(self.changeAppearanceSlot)
-        self.action_focusfrequency.triggered.connect(acqCtrl.focusFrequency)
+        # self.action_focusfrequency.triggered.connect(acqCtrl.focusFrequency)
         self.action_acquire.setEnabled(False)
 
     @pyqtSlot(QListWidgetItem)

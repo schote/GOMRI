@@ -41,11 +41,17 @@ class OperationsList(QListWidget):
 
         # Make parent reachable from outside __init__
         self.parent = parent
+        self._currentOperation = None
 
     def triggeredOperationChanged(self, operation: str = None) -> None:
-        packet = Com.constructSequencePacket(operation)
-        Com.sendPacket(packet)
+        # TODO: set sequence only once right here or on changed signal
+        # packet = Com.constructSequencePacket(operation)
+        # Com.sendPacket(packet)
+        self._currentOperation = operation
         self.setParametersUI(operation)
+
+    def getCurrentOperation(self) -> str:
+        return self._currentOperation
 
     def setParametersUI(self, operation: str = None) -> None:
         """
@@ -69,8 +75,6 @@ class OperationsList(QListWidget):
             shims = defaultoperations[operation].gradientshims
             inputwidgets += [(self.generateLabelItem(nmspc.shim))]
             inputwidgets += (self.generateWidgetsFromDict(shims))
-
-        # TODO: Insert sequence upload right here
 
         for item in inputwidgets:
             self.parent.layout_parameters.addWidget(item)

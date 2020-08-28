@@ -6,10 +6,10 @@ Acquisition Manager
 @version:   1.0
 @change:    02/05/2020
 
-@summary:   Class for managing the data acquisition
+@summary:   Manages acquisitions, purpose of this class is to perform the right processing for any operation
 
-@status:    Under testing
-@todo:      Generalize image acquisition manager
+@status:    Most of the methods in here are obsolete, divide work between acquisition controller and manager
+@todo:      Cleanup
 
 """
 
@@ -200,9 +200,9 @@ class AcquisitionManager:
             outputvalues["FWHM [ppm]"] = round(dataobject.get_fwhm()[2], 4)
             outputvalues["Center Frequency [MHz]"] = round(dataobject.get_peakparameters()[1], 4)
             outputvalues["Signal Maximum [V]"] = round(dataobject.get_peakparameters()[3], 4)
-        if properties is not None:
-            outputvalues["Sample Time [ms]"] = round(properties[nmspc.sampletime][0], 4)
-            outputvalues["Attenuation"] = round(properties[nmspc.attenuation][0], 4)
+        # if properties is not None:
+            # outputvalues["Sample Time [ms]"] = round(properties[nmspc.sampletime][0], 4)
+            # outputvalues["Attenuation"] = round(properties[nmspc.attenuation][0], 4)
         if acquisitiontime is not None:
             outputvalues["Acquisition Time [s]"] = round(acquisitiontime, 4)
 

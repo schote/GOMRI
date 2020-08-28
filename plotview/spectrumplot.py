@@ -1,5 +1,5 @@
 """
-Plotview Spectrum
+Plotview Spectrum (1D Plot)
 
 @author:    David Schote
 @contact:   david.schote@ovgu.de
@@ -8,14 +8,13 @@ Plotview Spectrum
 
 @summary:   Class for plotting a spectrum
 
-@status:    Under development
-@todo:
+@status:    Plots x and y data
+@todo:      Implement more feature from pyqtgraph
 
 """
 
 from pyqtgraph import GraphicsLayoutWidget, PlotItem
 from warnings import warn
-import numpy as np
 
 
 class SpectrumPlot (GraphicsLayoutWidget):

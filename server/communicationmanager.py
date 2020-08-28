@@ -6,34 +6,21 @@ Communication Manager
 @version:   1.0
 @change:    02/05/2020
 
-@summary:   Class for managing the communication between server and host.
-            Trigger table (interpreted by server, through 28th bit)
-            0:  no trigger
-            1:  transmit
-            2:  set frequency
-            3:  set attenuation
-            4:  upload sequence
-            5:  set gradient offsets
-            6:  acquire 2D SE image
-            7:  acquire 1D projections
+@summary:   Manages the connection to the server, constructs and sends packages (via msgpack)
 
 @status:    Under testing
 @todo:
 
 """
-from typing import Dict, Any, Union, Tuple
 
 from PyQt5.QtNetwork import QAbstractSocket, QTcpSocket
 from PyQt5.QtCore import pyqtSignal, pyqtSlot, QObject
-from globalvars import grads, pax
 from operationsnamespace import Namespace as nmspc
 from warnings import warn
-
-from server import server_comms as sc
 import numpy as np
 import struct
 import msgpack
-import time
+
 
 states = {
     QAbstractSocket.UnconnectedState: "Unconnected",
@@ -71,6 +58,10 @@ class Commands:
     testRxThroughput = 'test_throughput' # unsigned int [arg] (return array map, array-length = arg)
     requestPacket = 0
 
+# TODO: Create a config file for the following
+fpga_clk_frequency_MHz = 125
+
+
 class CommunicationManager(QTcpSocket, QObject):
     """
     Communication Manager Class
@@ -88,12 +79,13 @@ class CommunicationManager(QTcpSocket, QObject):
         @param ip:  IP address of the server
         @return:    success of connection
         """
-        self.connectToHost(ip, 1001)
-        self.waitForConnected(1000)
+        self.connectToHost(ip, 11111)
+        self.waitForConnected(2000)
         if self.state() == QAbstractSocket.ConnectedState:
             print("Connection to server established.")
             return True
         else:
+            print("Connection to server failed.")
             return False
 
     def disconnectClient(self) -> bool:
@@ -125,44 +117,48 @@ class CommunicationManager(QTcpSocket, QObject):
                 break
 
     @staticmethod
-    def constructPropertyPacket(operation) -> list:
+    def constructPropertyPacket(operation) -> dict:
 
-        packetIdx: int = 0
         packet: dict = {}
 
         if hasattr(operation, 'systemproperties'):
-            sys_prop = operation.systemproperties()
+            sys_prop = operation.systemproperties
             for key in list(sys_prop.keys()):
-                if len(sys_prop[key] == 3):
+                if len(sys_prop[key]) == 3:
+                    if key == nmspc.frequency:
+                        # TODO: Find alternative way for this ?
+                        packet[sys_prop[key][2]] = int(np.round(sys_prop[key][0] /
+                                                                fpga_clk_frequency_MHz * (1 << 30))) & 0xfffffff0 | 0xf
+                        continue
                     packet[sys_prop[key][2]] = sys_prop[key][0]
 
+        # TODO: Integrate gradient offsets in gradient waveform (maybe leave it for spectroscopy)
+        """
         if hasattr(operation, 'gradientshims'):
-            shim = operation.gradientshims()
-            packet[Commands.gradientOffsetX] = shim[nmspc.x_grad]
-            packet[Commands.gradientOffsetY] = shim[nmspc.y_grad]
-            packet[Commands.gradientOffsetZ] = shim[nmspc.z_grad]
-
-        fields = [Commands.requestPacket, packetIdx, 0, packet]
-        return fields
+            shim = operation.gradientshims
+            packet[Commands.gradientOffsetX] = shim[nmspc.x_grad][0]
+            packet[Commands.gradientOffsetY] = shim[nmspc.y_grad][0]
+            packet[Commands.gradientOffsetZ] = shim[nmspc.z_grad][0]
+        """
+        return packet
 
     @staticmethod
-    def constructSequencePacket(operation) -> list:
+    def constructSequencePacket(operation) -> dict:
 
-        packetIdx: int = 0
-        packet: dict = {}
+        package: dict = {}
 
-        if hasattr(operation, 'pulsesequence') and len(operation.pulsesequence()) > 1:
-            seq = operation.pulsesequence()
-            packet[Commands.sequenceData] = seq[nmspc.sequence][1]
+        if hasattr(operation, 'pulsesequence') and len(operation.pulsesequence) > 1:
+            seq = operation.pulsesequence
+            package[Commands.sequenceData] = seq[nmspc.sequence][1]
         else:
             warn("ERROR: No sequence bytestream!")
 
-        fields = [Commands.requestPacket, packetIdx, 0, packet]
-        return fields
+        return package
 
     def sendPacket(self, packet):
         self.write(msgpack.packb(packet))
         unpacker = msgpack.Unpacker()
+        self.waitForReadyRead(1000)
 
         while True:
             buf = self.read(1024)
@@ -172,7 +168,9 @@ class CommunicationManager(QTcpSocket, QObject):
             for o in unpacker:  # ugly way of doing it
                 return o  # quit function after 1st reply (could make this a thread in the future)
 
+
     def setFrequency(self, freq: float) -> None:
+        # TODO: Reimplement this function for new server
         """
         Set excitation frequency on the server
         @param freq:    Frequency in MHz

@@ -8,16 +8,15 @@ Operation Modes
 
 @summary:   TBD
 
-@status:    Under development
-@todo:      Subdivide operation object in finer structure,
-            system properties, sequence properties, type, etc.
+@status:    Under development, simple 1D spectrum operation implemented
+@todo:      Add gradient waveform, add more properties, add more operation types (create directory for operations)
 """
 
 from warnings import warn
 from globalvars import sqncs
 from assembler import Assembler
 from operationsnamespace import Namespace as nmspc
-from operationsnamespace import AcquisitionTypes as acqtypes
+from operationsnamespace import Reconstruction as reco
 from server.communicationmanager import Commands as cmd
 
 
@@ -25,12 +24,11 @@ class Spectrum:
     """
     Spectrum Operation Class
     """
-
     def __init__(self,
                  frequency: float = None,
-                 attenuation: float = None,
+                 # attenuation: float = None,
                  samples: int = None,
-                 sampletime: float = None,
+                 # sampletime: float = None,
                  shim=None):
         """
         Initialization of spectrum operation class
@@ -46,8 +44,8 @@ class Spectrum:
                 shim += [0]
 
         self._frequency = frequency
-        self._attenuation = attenuation
-        self._sampletime = sampletime
+        # self._attenuation = attenuation
+        # self._sampletime = sampletime
         self._samples = samples
         self._shim_x = shim[0]
         self._shim_y = shim[1]
@@ -62,7 +60,6 @@ class Spectrum:
         return {
             nmspc.frequency: [self._frequency, '_frequency', cmd.localOscillatorFrequency],
             # nmspc.attenuation: [self._attenuation, '_attenuation'],
-            # nmspc.rxsamples: [self._rxsamples, '_rxsamples', cmd.txSampleSize],
             # nmspc.sampletime: [self._sampletime, '_sampletime'],
             nmspc.samples: [self._samples, '_samples', cmd.runAcquisition]
         }
@@ -76,24 +73,22 @@ class Spectrum:
             # nmspc.z2_grad: [self._shim_z2, '_shim_z2']
         }
 
-    # TODO: create different interaction mode: button to upload sequence/gradient file
+    # TODO: Different interaction modes -> button to upload sequence/gradient file ?
+
     @property
     def pulsesequence(self) -> dict:
-        # TODO: integrate gradient waveform file
         return {
-            nmspc.type: acqtypes.spectrum,
-            nmspc.sequence: [self._sequence, self._sequencebytestream],
-            nmspc.gradientwaveform: None
+            nmspc.type: reco.spectrum,
+            nmspc.sequence: [self._sequence, self._sequencebytestream]
+            # TODO: Gradient waveform
         }
 
 
 """
-Definition of default operations
+Definition of default operations -- To be extended
 """
 serviceOperation = Spectrum()
 defaultoperations = {
-    # Example FID corresponds to "get_exampleFidData()" -- prototype data set
-    'Example FID Spectrum': Spectrum(20.0971, 10, 7.5, [0, 0, 0, 0]),
-    'Spectrum Test': Spectrum(11.25811, 10, 20, [0, 0, 0, 0]),
-    'Spectrum3': Spectrum(10, 10, 10, [1, 2, 3, 4])
+    'FID Spectrum 1': Spectrum(20.0971, 1000, [0, 0, 0, 0]),
+    'FID Spectrum 2': Spectrum(11.25811, 2000, [0, 0, 0, 0])
 }
