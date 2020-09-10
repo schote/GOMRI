@@ -132,5 +132,5 @@ dmypy.json
 .pyproject.user
 .pyproject.user
 *.pyproject.user
-.idea
 
+/.idea/
