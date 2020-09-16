@@ -97,7 +97,7 @@ A[0x1f]	pulseq_memory[62] = 0x6f9b
 A[0x20]	pulseq_memory[64] = 0x42f6 
 	pulseq_memory[65] = 0x74000500
 
-A[0x21]	pulseq_memory[66] = 0xf589 
+A[0x21]	pulseq_memory[66] = 0x16524 
 	pulseq_memory[67] = 0x74000300
 
 A[0x22]	pulseq_memory[68] = 0x1b3f724 

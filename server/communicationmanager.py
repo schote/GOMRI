@@ -161,7 +161,7 @@ class CommunicationManager(QTcpSocket, QObject):
         self.waitForReadyRead(1000)
 
         while True:
-            buf = self.read(1024)
+            buf = self.read(100)
             if not buf:
                 break
             unpacker.feed(buf)

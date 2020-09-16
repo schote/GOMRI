@@ -96,6 +96,10 @@ class AcquisitionController(QObject):
         fields = [command, packetIdx, 0, version, tmp_package]
 
         response = Com.sendPacket(fields)
+        if response is None:
+            print("Nothing received.")
+            return
+
         tmp_data = np.frombuffer(response[4]['acq'], np.complex64)
 
         # print("Data: {}".format(tmp_data))

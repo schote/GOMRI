@@ -25,11 +25,11 @@ class Spectrum:
     Spectrum Operation Class
     """
     def __init__(self,
+                 sequence: sqncs,
                  frequency: float = None,
                  # attenuation: float = None,
                  samples: int = None,
-                 # sampletime: float = None,
-                 shim=None):
+                 shim: list = None):
         """
         Initialization of spectrum operation class
         @param frequency:       Frequency value for operation
@@ -43,25 +43,25 @@ class Spectrum:
             while len(shim) < 4:
                 shim += [0]
 
-        self._frequency = frequency
+        self._frequency: float = frequency
         # self._attenuation = attenuation
         # self._sampletime = sampletime
-        self._samples = samples
-        self._shim_x = shim[0]
-        self._shim_y = shim[1]
-        self._shim_z = shim[2]
-        self._shim_z2 = shim[3]
-        self._sequence = sqncs.FID
+        self._samples: int = samples
+        self._shim_x: int = shim[0]
+        self._shim_y: int = shim[1]
+        self._shim_z: int = shim[2]
+        self._shim_z2: int = shim[3]
+        self._sequence = sequence # sqncs.FID
         self._sequencebytestream = Assembler().assemble(self._sequence.path)
 
     @property
     def systemproperties(self) -> dict:
         # TODO: add server cmd's as third entry in list
         return {
-            nmspc.frequency: [self._frequency, '_frequency', cmd.localOscillatorFrequency],
+            nmspc.frequency: [float(self._frequency), '_frequency', cmd.localOscillatorFrequency],
             # nmspc.attenuation: [self._attenuation, '_attenuation'],
             # nmspc.sampletime: [self._sampletime, '_sampletime'],
-            nmspc.samples: [self._samples, '_samples', cmd.runAcquisition]
+            nmspc.samples: [int(self._samples), '_samples', cmd.runAcquisition]
         }
 
     @property
@@ -87,8 +87,8 @@ class Spectrum:
 """
 Definition of default operations -- To be extended
 """
-serviceOperation = Spectrum()
+#serviceOperation = Spectrum()
 defaultoperations = {
-    'FID Spectrum 1': Spectrum(20.0971, 1000, [0, 0, 0, 0]),
-    'FID Spectrum 2': Spectrum(11.25811, 2000, [0, 0, 0, 0])
+    'FID Spectrum': Spectrum(sqncs.FID, 11.295, 2000),
+    'SE Spectrum (TE=10ms)': Spectrum(sqncs.SE, 11.295, 2000)
 }
