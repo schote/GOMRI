@@ -154,11 +154,11 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.kPha_fig.set_facecolor("None");
         self.kspc_fig = Figure(); self.kspc_canvas = FigureCanvas(self.kspc_fig)
         self.kspc_fig.set_facecolor("None");
-        self.sig_fig = Figure(); self.sig_canvas = FigureCanvas(self.sig_fig)
-        self.sig_fig.set_facecolor("None")
+        #self.sig_fig = Figure(); self.sig_canvas = FigureCanvas(self.sig_fig)
+        #self.sig_fig.set_facecolor("None")
         self.tabview.clear()
 
-        self.tabview.addTab(self.IMag_canvas, "Magnitude")
+        #self.tabview.addTab(self.IMag_canvas, "Magnitude")
 
         '''
         # add figure tabs to tab view
@@ -185,11 +185,11 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.kspc_kmag_ax = self.kspc_fig.add_subplot(gs[1,0]); self.kspc_kmag_ax.grid(False); self.kspc_kmag_ax.axis('equal', frameon=False)
         self.kspc_kpha_ax = self.kspc_fig.add_subplot(gs[1,1]); self.kspc_kpha_ax.grid(False); self.kspc_kpha_ax.axis('equal', frameon=False)
         #self.kspc_canvas.draw()
-        gs = GridSpec(5, 6, figure=self.sig_fig)
-        self.sig_t_ax = self.sig_fig.add_subplot(gs[0,0:6])
-        self.sig_f_ax = self.sig_fig.add_subplot(gs[1,0:6])
-        self.sig_kmag_ax = self.sig_fig.add_subplot(gs[2:5, 0:3]); self.sig_kmag_ax.grid(False)
-        self.sig_Imag_ax = self.sig_fig.add_subplot(gs[2:5, 3:6]); self.sig_Imag_ax.grid(False)
+        #gs = GridSpec(5, 6, figure=self.sig_fig)
+        #self.sig_t_ax = self.sig_fig.add_subplot(gs[0,0:6])
+        #self.sig_f_ax = self.sig_fig.add_subplot(gs[1,0:6])
+        #self.sig_kmag_ax = self.sig_fig.add_subplot(gs[2:5, 0:3]); self.sig_kmag_ax.grid(False)
+        #self.sig_Imag_ax = self.sig_fig.add_subplot(gs[2:5, 3:6]); self.sig_Imag_ax.grid(False)
         #self.sig_canvas.draw()
 
         # init data structures
@@ -316,21 +316,21 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         idx = self.ts*250 # 1 sample = 4us, ts = 4ms -> idx = 1000 samples
         data = self.data.data#*2000.0
         dclip = data[0:idx]
-        self.freqaxis = np.linspace(-125000, 125000, idx) # 1000 datapoints
-        self.timeaxis = np.linspace(0, self.ts, idx) # 4ms
-        self.mag = np.abs(dclip)
-        self.pha = np.angle(dclip)
-        self.real = np.real(dclip)
-        self.imag = np.imag(dclip)
+        #self.freqaxis = np.linspace(-125000, 125000, idx) # 1000 datapoints
+        #self.timeaxis = np.linspace(0, self.ts, idx) # 4ms
+        #self.mag = np.abs(dclip)
+        #self.pha = np.angle(dclip)
+        #self.real = np.real(dclip)
+        #self.imag = np.imag(dclip)
 
-        self.fft_mag = abs(np.fft.fftshift(np.fft.fft(np.fft.fftshift(dclip), n=idx, norm='ortho')))
+        #self.fft_mag = abs(np.fft.fftshift(np.fft.fft(np.fft.fftshift(dclip), n=idx, norm='ortho')))
 
         #self.kspace_full[self.buffers_received, :] = data[0:self.crop_size]
         #self.kspace_full[self.buffers_received, :] = dclip[self.kspace_center-self.ROcrop:self.kspace_center+self.ROcrop]#data
         #self.full_data = np.vstack([self.full_data, data])
 
-        self.k_amp[self.buffers_received, :] = np.abs(data[self.kspace_center - params.npe : self.kspace_center + params.npe])#mag[self.kspace_center - params.npe : self.kspace_center + params.npe]
-        self.k_pha[self.buffers_received, :] = np.angle(data[self.kspace_center - params.npe : self.kspace_center + params.npe])#pha[self.kspace_center - params.npe : self.kspace_center + params.npe]
+        #self.k_amp[self.buffers_received, :] = np.abs(data[self.kspace_center - params.npe : self.kspace_center + params.npe])#mag[self.kspace_center - params.npe : self.kspace_center + params.npe]
+        #self.k_pha[self.buffers_received, :] = np.angle(data[self.kspace_center - params.npe : self.kspace_center + params.npe])#pha[self.kspace_center - params.npe : self.kspace_center + params.npe]
 
         #self.k_amp[self.buffers_received, :] = self.mag[self.kspace_center-self.ROcrop:self.kspace_center+self.ROcrop]#[self.kspace_center-params.npe : self.kspace_center+params.npe]
         #self.k_pha[self.buffers_received, :] = self.pha[self.kspace_center-self.ROcrop:self.kspace_center+self.ROcrop]#[self.kspace_center-params.npe : self.kspace_center+params.npe]
@@ -339,27 +339,40 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         #if params.npe >= 128: self.kspace[self.buffers_received, :] = data[0:self.crop_size]
         #else: self.kspace[self.buffers_received, :] = data[0:int(self.crop_size/2)]
 
+        print("data length: {}, crop-size: {}, buffers_received: {}, npe: {}".format(len(data), self.crop_size, self.buffers_received, params.npe))
         self.kspace[self.buffers_received, :] = data[0:self.crop_size]
+
 
         #if params.npe >= 128: self.kspace = self.kspace_full[0:params.npe, :]
         #else: self.kspace = self.kspace_full[0:params.npe, 0:int(self.crop_size/2)]
 
         #self.kspace = self.kspace_full[0:params.npe, :]#self.kspace_center-self.half_crop_size:self.kspace_center+self.half_crop_size]
-        Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(self.kspace)))
+        #Y = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(self.kspace)))
 
-        self.img_mag = np.abs(Y[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
-        self.img_pha = np.angle(Y[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
+        #self.img_mag = np.abs(Y[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
+        #self.img_pha = np.angle(Y[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
 
         self.buffers_received += 1
+        self.imagProgress.setValue(100 * self.buffers_received / params.npe)
+
         if self.buffers_received == params.npe:
-            self.acq_completed.emit()
+            #self.acq_completed.emit()
+            self.process_kspace()
+            self.show_Tabs()
             self.enable_ui()
 
         #print("{}/{} received".format(self.buffers_received, params.npe))
-        self.imagProgress.setValue(100*self.buffers_received/params.npe)
+
         #self.call_update.emit()
 
-        self.update_imaging_plot()
+        #self.update_imaging_plot()
+
+    def process_kspace(self):
+        self.k_amp = np.abs(self.kspace[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
+        self.k_pha = np.angle(self.kspace[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
+        I = np.fft.fftshift(np.fft.fft2(np.fft.fftshift(self.kspace)))
+        self.img_mag = np.abs(I[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
+        self.img_pha = np.angle(I[:, self.cntr-int(params.npe/2-1):self.cntr+int(params.npe/2+1)])
 
 #_______________________________________________________________________________
 #   Function to Update the plots
@@ -415,22 +428,22 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         '''
         self.IMag_ax.imshow(self.img_mag, cmap='gray'); self.IMag_ax.axis('off')
         self.IMag_canvas.draw(); self.call_update.emit()
-
+        
         self.IPha_ax.imshow(self.img_pha, cmap='gray'); self.IPha_ax.axis('off')
         self.IPha_canvas.draw(); self.call_update.emit()
-
+        
         self.kMag_ax.imshow(self.k_amp, cmap='inferno', aspect=self.kRatio); self.kMag_ax.axis('off')
         self.kMag_canvas.draw(); self.call_update.emit()
-
+        
         self.kPha_ax.imshow(self.k_pha, cmap='inferno', aspect=self.kRatio); self.kPha_ax.axis('off')
         self.kPha_canvas.draw(); self.call_update.emit()
-
+        
         self.kspc_Imag_ax.imshow(self.img_mag, cmap='gray'); self.kspc_Imag_ax.axis('off'); self.kspc_canvas.draw()
         self.kspc_Ipha_ax.imshow(self.img_pha, cmap='gray'); self.kspc_Ipha_ax.axis('off'); self.kspc_canvas.draw()
         self.kspc_kmag_ax.imshow(self.k_amp, cmap='inferno', aspect=self.kRatio); self.kspc_kmag_ax.axis('off'); self.kspc_canvas.draw()
         self.kspc_kpha_ax.imshow(self.k_pha, cmap='inferno', aspect=self.kRatio); self.kspc_kpha_ax.axis('off'); self.kspc_canvas.draw()
         self.call_update.emit()
-
+        
         self.sig_f_ax.clear(); self.sig_t_ax.clear(); self.sig_canvas.draw()
         self.sig_f_ax.plot(self.freqaxis, self.fft_mag); self.sig_canvas.draw()
         self.sig_t_ax.plot(self.timeaxis, self.mag, label='Magnitude'); self.sig_canvas.draw()
@@ -452,6 +465,7 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.kspc_Ipha_ax.imshow(self.img_pha, cmap='gray'); self.kspc_Ipha_ax.axis('off')
         self.kspc_kmag_ax.imshow(self.k_amp, cmap='inferno', aspect=self.kRatio); self.kspc_kmag_ax.axis('off')
         self.kspc_kpha_ax.imshow(self.k_pha, cmap='inferno', aspect=self.kRatio); self.kspc_kpha_ax.axis('off')
+        """
         self.sig_f_ax.clear(); self.sig_t_ax.clear()
         self.sig_f_ax.plot(self.freqaxis, self.fft_mag)
         self.sig_t_ax.plot(self.timeaxis, self.mag, label='Magnitude')
@@ -460,8 +474,8 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.sig_t_ax.legend()
         self.sig_Imag_ax.imshow(self.img_mag, cmap='gray'); self.sig_Imag_ax.axis('off')
         self.sig_kmag_ax.imshow(self.k_amp, cmap='inferno', aspect=self.kRatio); self.sig_kmag_ax.axis('off')
-
-        self.sig_canvas.draw()
+        """
+        #self.sig_canvas.draw()
         self.kspc_canvas.draw()
         self.IMag_canvas.draw()
         self.IPha_canvas.draw()
@@ -469,15 +483,15 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.kPha_canvas.draw()
 
         self.tabview.clear()
-        self.tabview.addTab(self.sig_canvas, "Signals")
+        #self.tabview.addTab(self.sig_canvas, "Signals")
         self.tabview.addTab(self.kspc_canvas, "Overview")
-        self.tabview.addTab(self.IMag_canvas, "Magnitude")
+        self.tabview.addTab(self.IMag_canvas, "Image Magnitude")
         self.tabview.addTab(self.IPha_canvas, "Image Phase")
         self.tabview.addTab(self.kMag_canvas, "k-Space Magnitude")
         self.tabview.addTab(self.kPha_canvas, "k-Space Phase")
 
-#_______________________________________________________________________________
-#   Disable and Enable User Interface
+#____________________________________________________________________________
+#Disable and Enable User Interface
 
     def disable_ui(self):
         self.seq_input_widget.setEnabled(False)
@@ -498,8 +512,8 @@ class CC2DImagWidget(CC_2DImag_Base, CC_2DImag_Form):
         self.setOffset_btn.setEnabled(True)
         self.specBtn_widget.setEnabled(True)
         self.avg_input.setEnabled(True)
-#_______________________________________________________________________________
-#   Load/Save Parameters
+#____________________________________________________________________________
+#Load/Save Parameters
 
     def load_params(self):
         self.npe_input.setValue(params.npe)
