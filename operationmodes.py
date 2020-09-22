@@ -80,14 +80,18 @@ class Spectrum:
         return {
             nmspc.type: reco.spectrum,
             nmspc.sequence: [self._sequence, self._sequencebytestream]
-            # TODO: Gradient waveform
+            # nmspc.gradwaveform: []
+
+            # 2D Imaging Implementations:
+            # Insert gradient waveforms here with normalized waveform values in the range of 0-1.
+            # Add repetitions - calculate scaling from system preferences and repetitions.
+            # Load sequence and gradient waveforms in a sequence manager from csv file.
         }
 
 
 """
-Definition of default operations -- To be extended
+Definition of default operations
 """
-#serviceOperation = Spectrum()
 defaultoperations = {
     'FID Spectrum': Spectrum(sqncs.FID, 11.295, 2000),
     'SE Spectrum (TE=10ms)': Spectrum(sqncs.SE, 11.295, 2000)

@@ -113,4 +113,9 @@ class SequenceManager(QObject):
                 out_file.write(line)
 
 
+    @staticmethod
+    def loadGradientWaveformFromFile():
+        print("Load Grads from csv (TODO).")
+
+
 SqncMngr = SequenceManager()
